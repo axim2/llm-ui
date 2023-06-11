@@ -1,0 +1,94 @@
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel='stylesheet' type='text/css' href='memory:style.css'>
+</head>
+<body onload="onLoad()">
+
+<!-- chat -->
+<section class="main">
+  <div class="toolbar">
+    <button class="toolbar-button" onclick="toggleGeneration()">Pause</button>
+    <button class="toolbar-button" onclick="stopGeneration()">Stop</button>
+    <button class="toolbar-button" onclick="reloadParams()">Reload Params</button>
+    <button class="toolbar-button" onclick="showSettingsUI()">Settings</button>
+    Model: <select name="model" id="model" onchange="loadModel(this.value)"></select>
+  </div>
+  <header class="header">
+    <div class="base-prompt"></div>
+  </header>
+
+  <main class="ui-chat">
+  </main>
+
+  <form class="inputarea">
+    <input type="text" class="user-input" autofocus="true" placeholder="Enter your message...">
+    <button type="submit" class="send-button">Send</button>
+  </form>
+  <p><div class="statusarea"></div></p>
+</section>
+
+<!-- popup for settings -->
+<div class="popup" id="settings-popup">
+  <div class="popup-content">
+    <div class="popup-header">
+      <span class="close">&times;</span>
+      <h2>Settings</h2>
+    </div>
+    <div class="popup-body" id="settings-body">
+      <div class="settings-entry" id="setting-prompt">
+        <div class="settings-entry-text" id="prompt-text">Prompt</div>
+        <textarea class="settings-entry-value" id="prompt-value" rows="10" cols="60"></textarea>
+      </div>
+      <div class="settings-entry" id="setting-antiprompt">
+        <div class="settings-entry-text" id="antiprompt-text">Reverse prompts</div>
+        <textarea class="settings-entry-value" id="antiprompt-value" rows="2" cols="60"></textarea>
+      </div>
+      <div class="settings-entry" id="setting-seed">
+        <div class="settings-entry-text" id="seed-text">Random seed</div>
+        <input class="settings-entry-value" id="seed-value" maxlength="10" size="10"></input>
+      </div>
+      <div class="settings-entry" id="setting-n_ctx">
+        <div class="settings-entry-text" id="n_ctx-text">Context size</div>
+        <input class="settings-entry-value" id="n_ctx-value" maxlength="7" size="7"></input>
+      </div>
+      <div class="settings-entry" id="setting-n_keep">
+        <div class="settings-entry-text" id="n_keep-text">Keep tokens</div>
+        <input class="settings-entry-value" id="n_keep-value" maxlength="7" size="7"></input>
+      </div>
+      <div class="settings-entry" id="setting-n_predict">
+        <div class="settings-entry-text" id="n_predict-text">Predict tokens</div>
+        <input class="settings-entry-value" id="n_predict-value" maxlength="7" size="7"></input>
+      </div>
+      <div class="settings-entry" id="setting-temp">
+        <div class="settings-entry-text" id="temp-text">Temperature</div>
+        <input class="settings-entry-value" id="temp-value" maxlength="10" size="10"></input>
+      </div>
+      <div class="settings-entry" id="setting-top_k">
+        <div class="settings-entry-text" id="top_k-text">Top K</div>
+        <input class="settings-entry-value" id="top_k-value" maxlength="7" size="7"></input>
+      </div>
+      <div class="settings-entry" id="setting-top_p">
+        <div class="settings-entry-text" id="top_p-text">Top P</div>
+        <input class="settings-entry-value" id="top_p-value" maxlength="7" size="7"></input>
+      </div>
+      <div class="settings-entry" id="setting-logit_bias">
+        <div class="settings-entry-text" id="logit_bias-text">Logit bias</div>
+        <textarea class="settings-entry-value" id="logit_bias-value" rows="1" columns="10"></textarea>
+      </div>
+      
+    </div>
+    <div class="popup-footer">
+      <button class="settings-button" onclick="saveSettings()">Save</button>
+      <button class="settings-button" onclick="settingsPopup.style.display='none'">Cancel</button>
+      <button class="settings-button" onclick="populateSettingsWindow()">Reset</button>
+    </div>
+  </div>
+</div>
+
+</body>
+
+<script src="memory:userscripts/base.js"></script>
+<script src="memory:userscripts/user.js"></script>
+</html>
