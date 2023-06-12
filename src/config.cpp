@@ -29,7 +29,7 @@ bool Config::ParseFile(std::string filename) {
 
         // custom prompt has a preference over prompt_file
         if (this->prompt == DEFAULT_PROMPT) {
-            std::string s = utils::ReadTextFile(this->prompt_dir + std::string("/") + this->prompt_file);
+            std::string s = utils::ReadTextFile(this->prompt_path);
             if (s.size() > 0) { // use this prompt
                 this->prompt = s;
                 this->gpt_parameters.prompt = s;
@@ -59,8 +59,7 @@ bool Config::ParseJSON(std::string input) {
     if (this->prompt.size() == 0) // treat "" as empty value
         this->prompt = DEFAULT_PROMPT;
         
-    this->prompt_dir        = j.value("prompt_dir", DEFAULT_PROMPT_DIR);
-    this->prompt_file       = j.value("prompt_file", DEFAULT_PROMPT_FILE);
+    this->prompt_path       = j.value("prompt_path", DEFAULT_PROMPT_PATH);
     this->ui_dir            = j.value("ui_dir", DEFAULT_UI_DIR);
     this->ui_style          = j.value("ui_style", DEFAULT_UI_STYLE);
     this->userscripts_dir   = j.value("userscripts_dir", DEFAULT_USERSCRIPTS_DIR);
@@ -95,8 +94,7 @@ void to_json(json& j, const Config& cfg) {
         {"model_file",      cfg.model_file},
         {"avatar_dir",      cfg.avatar_dir},
         {"prompt",          cfg.prompt},
-        {"prompt_dir",      cfg.prompt_dir}, 
-        {"prompt_file",     cfg.prompt_file},
+        {"prompt_path",     cfg.prompt_path},
         {"ui_dir",          cfg.ui_dir},
         {"ui_style",        cfg.ui_style},
         {"userscripts_dir", cfg.userscripts_dir},
