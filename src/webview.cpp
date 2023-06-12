@@ -39,8 +39,38 @@ wxWebView *Webview::GetBrowser() {
 
 // called by LLM code
 bool Webview::AddTokenToUI(std::string token) {
+    
+    // check if we are receiving input for previously started multi-byte character
+    if (this->input_left > 0) {
+        this->tmp_input.append(token);
+        this->input_left--;
+        
+        if (this->input_left == 0) { // send tmp_input to the UI
+            this->tmp_input = utils::CleanStringForJS(this->tmp_input);
+            
+            bool result = this->browser->RunScript("LLMOutput(\"" + wxString::FromUTF8(this->tmp_input) + "\");");
+            this->tmp_input = "";
+            return result;
+        } else { // still some input left
+            return true;
+        }
+    }
+    
+    // check for incoming multi-byte characters, first byte: 1110xxxx => 3-byte character
+    uint8_t c = token.at(0);
+    if (c >= 192)
+        this->input_left++;
+    if (c >= 224)
+        this->input_left++;
+    if (c >= 240)
+        this->input_left++;
+    if (this->input_left > 0) { // return since we are waiting for the rest of bytes
+        this->tmp_input.append(token);
+        return true;
+    }
+    
     token = utils::CleanStringForJS(token);
-    bool result = this->browser->RunScript("LLMOutput(\"" + token + "\");");
+    bool result = this->browser->RunScript("LLMOutput(\"" + wxString::FromUTF8(token) + "\");");
     return result;
 }
 

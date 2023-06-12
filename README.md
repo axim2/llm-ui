@@ -79,7 +79,6 @@ All models supported by the [llama.cpp](https://github.com/ggerganov/llama.cpp) 
 
 ## Issues and Limitations
 
-- Emojis and special symbols cause problem for JavaScript and therefore aren't shown properly in UI.
 - If there is some typo in .js files (missing semicolon etc.), you may get an empty UI or some cryptic error message.
 
 

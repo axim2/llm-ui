@@ -45,6 +45,8 @@ private:
     inline static std::vector<std::string> ui_styles; // list of available UI styles
     inline static std::vector<std::string> ui_style_files; // list of files related to currently active style
     inline static std::vector<std::string> memory_files; // list of all files added to memory FS
+    std::string tmp_input;
+    int input_left = 0;
 };
 
 #endif // WEBVIEW_H
