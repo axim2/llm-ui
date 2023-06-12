@@ -408,6 +408,15 @@ function LLMOutput(token) {
 }
 
 
+// sends chatlog (with base prompt) to the backend
+function retrieveLog() {
+  tmp = {};
+  tmp["base_prompt"] = base_prompt;
+  tmp["log"] = log;
+  return tmp;
+}
+
+
 // Utility functions
 function formatDate(date) {
   const hour = "0" + date.getHours();

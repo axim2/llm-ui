@@ -3,16 +3,17 @@
 namespace fs = std::filesystem;
 
 wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
-    EVT_MENU(MENU_LOAD,     MainFrame::OnLoadConfig)
-    EVT_MENU(MENU_SAVE,     MainFrame::OnSaveConfig)
-    EVT_MENU(MENU_SAVE_AS,  MainFrame::OnSaveAsConfig)
-    EVT_MENU(wxID_EXIT,     MainFrame::OnExit)
-    EVT_MENU(wxID_ABOUT,    MainFrame::OnAbout)
+    EVT_MENU(MENU_SAVE_CONVERSATION,    MainFrame::OnSaveConversation)
+    EVT_MENU(MENU_LOAD,                 MainFrame::OnLoadConfig)
+    EVT_MENU(MENU_SAVE,                 MainFrame::OnSaveConfig)
+    EVT_MENU(MENU_SAVE_AS,              MainFrame::OnSaveAsConfig)
+    EVT_MENU(wxID_EXIT,                 MainFrame::OnExit)
+    EVT_MENU(wxID_ABOUT,                MainFrame::OnAbout)
 
-    EVT_MENU(MENU_Generate, MainFrame::OnGenerate)
-    EVT_MENU(MENU_Pause,    MainFrame::OnPause)
-    EVT_MENU(MENU_Stop,     MainFrame::OnStop)
-    EVT_MENU(MENU_Reload_UI, MainFrame::OnReloadUI)
+    EVT_MENU(MENU_Generate,             MainFrame::OnGenerate)
+    EVT_MENU(MENU_Pause,                MainFrame::OnPause)
+    EVT_MENU(MENU_Stop,                 MainFrame::OnStop)
+    EVT_MENU(MENU_Reload_UI,            MainFrame::OnReloadUI)
 
     EVT_BUTTON(BUTTON_Generate, MainFrame::OnGenerate)
     EVT_BUTTON(BUTTON_Pause, MainFrame::OnPause)
@@ -95,6 +96,9 @@ MainFrame::MainFrame(const wxString& title, const wxPoint& pos, const wxSize& si
     
     // create menus
     wxMenu *menuFile = new wxMenu;
+    menuFile->Append(MENU_SAVE_CONVERSATION, "&Save conversation",
+                     "Saves conversation as JSON to the file");
+    menuFile->AppendSeparator();
     menuFile->Append(MENU_LOAD, "&Load configuration\tCtrl-O",
                      "Loads configuration from the file");
     menuFile->Append(MENU_SAVE, "&Save configuration\tCtrl-S",
@@ -206,6 +210,37 @@ void MainFrame::CreateModelList(void) {
 }
 
 
+
+void MainFrame::OnSaveConversation(wxCommandEvent& event) {
+
+    if (this->model->GetBusy()) { // can't save if we are busy generating
+        LOG_S(WARNING) << "Can't save conversation while generating output";
+        return;
+    }
+
+    wxString output;
+    if (this->webview->GetBrowser()->RunScript("retrieveLog();", &output)) {
+        
+        // show save dialog
+        wxFileDialog saveFileDialog(this, _("Save conversation"), "", "", 
+                                    "JSON files (*.json)|*.json", wxFD_SAVE|wxFD_OVERWRITE_PROMPT);
+        
+        if (saveFileDialog.ShowModal() == wxID_CANCEL)
+            return;
+        
+        output = utils::CleanJSString(output.ToStdString());
+        json j = json::parse(output);
+        
+        bool ret = this->SaveJSON(j, saveFileDialog.GetPath().utf8_string());
+        if (!ret)
+            wxLogError("Error saving conversation to: %s", saveFileDialog.GetPath());       
+        
+    } else { // some error happened
+        LOG_S(ERROR) << "Error retrieving conversation log";
+    }
+}
+
+
 void MainFrame::OnAbout(wxCommandEvent& event) {
     wxMessageBox("LLM-UI Version 0.1",
                 "About LLM-UI", wxOK | wxICON_INFORMATION);
@@ -263,6 +298,17 @@ bool MainFrame::SaveConfig(std::string file_path) {
         SetStatusText("Saved configuration to " + file_path);
 
     return ret;
+}
+
+
+bool MainFrame::SaveJSON(json j, std::string file_path) {
+    std::string str = j.dump(2);
+
+    bool ret = utils::WriteTextFile(str, file_path);
+    if (ret)
+        SetStatusText("Saved to " + file_path);
+
+    return ret;    
 }
 
 

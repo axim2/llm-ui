@@ -41,6 +41,7 @@ private:
     void OnExit(wxCommandEvent& event);
     void OnClose(wxCloseEvent& event);
 
+    void OnSaveConversation(wxCommandEvent& event);
     void OnLoadConfig(wxCommandEvent& event);
     void OnSaveConfig(wxCommandEvent& event);
     void OnSaveAsConfig(wxCommandEvent& event);
@@ -49,6 +50,7 @@ private:
     void OnPause(wxCommandEvent& event);
     void OnStop(wxCommandEvent& event);
     void OnReloadUI(wxCommandEvent& event);
+
     void WebviewOnLoaded(wxWebViewEvent& event);
 
     void WebviewCommand(wxWebViewEvent& event); 
@@ -56,6 +58,8 @@ private:
     bool InitializeModel(void);
     void CreateModelList(void);
     bool SaveConfig(std::string file_path);
+    bool SaveJSON(json j, std::string file_path);
+
     void SetUIParameters(void);
 
     wxDECLARE_EVENT_TABLE();
@@ -81,6 +85,7 @@ enum {
     MENU_LOAD = 9,
     MENU_SAVE = 10,
     MENU_SAVE_AS = 11,
+    MENU_SAVE_CONVERSATION = 12,
     MENU_Reload_UI = wxID_HIGHEST + 1
 };
 
