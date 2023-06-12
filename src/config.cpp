@@ -36,7 +36,7 @@ bool Config::ParseFile(std::string filename) {
             }
         }
     }
-    
+
     return true;
 }
 
@@ -70,6 +70,9 @@ bool Config::ParseJSON(std::string input) {
     
     // main prompt takes preference over gpt_params prompt
     this->gpt_parameters.prompt = this->prompt;
+    
+    if (j.contains("auto_n_keep"))
+        this->auto_n_keep = j["auto_n_keep"].get<bool>();
 
     } catch (...) {
         LOG_S(ERROR) << "Exception when parsing config JSON";
@@ -82,6 +85,7 @@ bool Config::ParseJSON(std::string input) {
 // Converts all configuration data to JSON
 void to_json(json& j, const Config& cfg) {
     j = json{
+        {"auto_n_keep",     cfg.auto_n_keep},
         {"char_name",       cfg.char_name},
         {"char_avatar",     cfg.char_avatar},
         {"config_dir",      cfg.config_dir},

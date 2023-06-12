@@ -17,7 +17,9 @@
 #include "ggml.h"
 #include "llama.h"
 #include "llama-util.h"
+
 #include "webview.h"
+#include "config.h"
 
 /*
 #ifndef LLAMA_VOCAB
@@ -39,7 +41,7 @@ struct llama_vocab {
 
 class Model {
 public:
-    explicit Model(Webview *webview);
+    explicit Model(Webview *webview, Config *config);
     ~Model();
     
     bool LoadModel(std::string model_path);
@@ -65,6 +67,7 @@ private:
     gpt_params params;
     llama_context *ctx = nullptr;
     Webview *webview; // used for communication with the HTML UI
+    Config *config; // pointer to config class
     
     inline static bool is_interacting = false;
     inline static bool busy = false;

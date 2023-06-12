@@ -48,6 +48,7 @@ public:
     std::string ui_dir      = DEFAULT_UI_DIR;
     std::string ui_style    = DEFAULT_UI_STYLE;
     std::string userscripts_dir;
+    bool        auto_n_keep = false;
     json gpt_json; // GPT params as JSON object before parsing
     gpt_params gpt_parameters; 
 

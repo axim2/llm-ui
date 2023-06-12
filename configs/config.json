@@ -1,4 +1,5 @@
 {
+  "auto_n_keep": true,
   "avatar_dir": "avatars/",
   "char_avatar": "llama.jpg",
   "char_name": "Bob",

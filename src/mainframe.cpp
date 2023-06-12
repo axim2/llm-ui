@@ -173,7 +173,7 @@ bool MainFrame::InitializeModel(void) {
         delete this->model;
     }
         
-    this->model = new Model(this->webview);
+    this->model = new Model(this->webview, this->config);
     this->model->SetGPTParams(this->config->gpt_parameters);
         
     // check that the model file exists

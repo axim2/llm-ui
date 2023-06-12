@@ -3,9 +3,10 @@
 #include "model.h"
 
 
-Model::Model(Webview *webview) {
+Model::Model(Webview *webview, Config *config) {
     
     this->webview = webview;
+    this->config = config;
 
     // just in case
     this->stop.clear();
@@ -128,6 +129,25 @@ bool Model::GenerateOutput(std::string prompt) {
         return false;
     }
     
+    // if n_keep == true and auto_n_keep == true, set n_keep to base prompt 
+    // (before user/char lines)
+    if ((this->params.n_keep == 0) && (this->config->auto_n_keep)) {
+        auto user_tokens = ::llama_tokenize(ctx, this->config->user_name + ":", false);
+        auto char_tokens = ::llama_tokenize(ctx, this->config->char_name + ":", false);
+
+        auto user_iter = std::search(embd_inp.begin(), embd_inp.end(), 
+                                     user_tokens.begin(), user_tokens.end());
+        auto user_pos = std::distance(embd_inp.begin(), user_iter);
+
+        auto char_iter = std::search(embd_inp.begin(), embd_inp.end(), 
+                                     char_tokens.begin(), char_tokens.end());
+        auto char_pos = std::distance(embd_inp.begin(), char_iter);
+
+        // set n_keep to first occurence of either char's or user's line
+        this->params.n_keep = user_pos > char_pos ? char_pos : user_pos;        
+        LOG_S(INFO) << "Setting n_keep based on prompt to " << this->params.n_keep;
+    }
+    
     // number of tokens to keep when resetting context
     if (this->params.n_keep < 0 || this->params.n_keep > (int)embd_inp.size() || this->params.instruct) {
         this->params.n_keep = (int)embd_inp.size();
@@ -192,7 +212,6 @@ bool Model::GenerateOutput(std::string prompt) {
             // - take the n_keep first tokens from the original prompt (via n_past)
             // - take half of the last (n_ctx - n_keep) tokens and recompute the logits in batches
             if (n_past + (int) embd.size() > n_ctx) {
-                //std::cout << "context reorganization triggered" << std::endl;
                 const int n_left = n_past - params.n_keep;
                 //n_past = params.n_keep;
 
@@ -360,7 +379,6 @@ bool Model::GenerateOutput(std::string prompt) {
         // display text, don't display initial prompt (embd is equal to embd_inp)
         if (!input_noecho && (embd != embd_inp)) {
             for (auto id : embd) {
-                //std::cout << "outputting, id: " << id << " " << ctx << std::endl;
                 printf("%s", llama_token_to_str(ctx, id));
                 std::string output = std::string(llama_token_to_str(ctx, id));
                 this->webview->AddTokenToUI(output);
@@ -382,7 +400,6 @@ bool Model::GenerateOutput(std::string prompt) {
                 // Check if each of the reverse prompts appears at the end of the output.
                 for (std::string & antiprompt : params.antiprompt) {
                     if (last_output.find(antiprompt.c_str(), last_output.length() - antiprompt.length(), antiprompt.length()) != std::string::npos) {
-                        //std::cout << "Reverse prompt detected: " << antiprompt << std::endl;
 
                         is_interacting = true;
                         is_antiprompt = true;
