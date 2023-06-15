@@ -23,16 +23,19 @@ bool Config::ParseFile(std::string filename) {
         if (!ret)
             return false;
         
-        // set up reasonable defaults
-        if (this->gpt_parameters.antiprompt.size() == 0)
-            this->gpt_parameters.antiprompt.push_back(this->user_name + ":");
+        for (int i = 0; i < this->n_chars; i++) {
+            // set up reasonable defaults
+            if (this->gpt_parameters.at(i).antiprompt.size() == 0)
+                this->gpt_parameters.at(i).antiprompt.push_back(this->user_name + ":");
 
-        // custom prompt has a preference over prompt_file
-        if (this->prompt == DEFAULT_PROMPT) {
-            std::string s = utils::ReadTextFile(this->prompt_path);
-            if (s.size() > 0) { // use this prompt
-                this->prompt = s;
-                this->gpt_parameters.prompt = s;
+            // custom prompt has a preference over prompt_file
+            if (this->prompt == DEFAULT_PROMPT) {
+                std::string s = utils::ReadTextFile(this->prompt_path.at(i));
+                if (s.size() > 0) { // use this prompt
+                    //this->prompt = s; we don't save prompt here, otherwise file won't have a preference on the next run
+                    this->gpt_parameters.at(i).prompt = s;
+                }
+                //LOG_S(INFO) << "prompt for char " << i << " is now: " << this->gpt_parameters.at(i).prompt;
             }
         }
     }
@@ -47,8 +50,8 @@ bool Config::ParseJSON(std::string input) {
     try {
     json j = json::parse(input);
     
-    this->char_name         = j.value("char_name", DEFAULT_CHAR_NAME);
-    this->char_avatar       = j.value("char_avatar", DEFAULT_CHAR_AVATAR);
+    this->char_names        = j.value("char_names", std::vector<std::string>({DEFAULT_CHAR_NAME}));
+    this->char_avatars      = j.value("char_avatars", std::vector<std::string>({DEFAULT_CHAR_AVATAR}));
     this->config_dir        = j.value("config_dir", DEFAULT_CONFIG_DIR);
     this->user_name         = j.value("user_name", DEFAULT_USER_NAME);
     this->user_avatar       = j.value("user_avatar", DEFAULT_USER_AVATAR);
@@ -59,19 +62,30 @@ bool Config::ParseJSON(std::string input) {
     if (this->prompt.size() == 0) // treat "" as empty value
         this->prompt = DEFAULT_PROMPT;
         
-    this->prompt_path       = j.value("prompt_path", DEFAULT_PROMPT_PATH);
+    this->prompt_path       = j.value("prompt_path", std::vector<std::string>({DEFAULT_PROMPT_PATH}));
     this->ui_dir            = j.value("ui_dir", DEFAULT_UI_DIR);
     this->ui_style          = j.value("ui_style", DEFAULT_UI_STYLE);
     this->userscripts_dir   = j.value("userscripts_dir", DEFAULT_USERSCRIPTS_DIR);
     
-    this->gpt_json = j.value("gpt_params", json::object());
-    this->gpt_parameters = this->gpt_json;
+    if (j.contains("n_chars"))
+        this->n_chars = j["n_chars"].get<int>();
     
-    // main prompt takes preference over gpt_params prompt
-    this->gpt_parameters.prompt = this->prompt;
+    this->gpt_json = j.value("gpt_params", json::object());
+    uint32_t i;
+    for (i = 0; i < this->gpt_json.size(); i++)
+        this->gpt_parameters.push_back(this->gpt_json[i]);
+
+    while ((int) this->gpt_parameters.size() < this->n_chars) {
+        // fill the rest gpt_parameters if they aren't given in the config file
+        this->gpt_parameters.push_back(this->gpt_json[i-1]); // i increased at the end of the loop
+    }
+    
+    // main prompt takes preference over gpt_params prompt FIXME, also prompt as an array?
+    this->gpt_parameters.at(0).prompt = this->prompt;
     
     if (j.contains("auto_n_keep"))
         this->auto_n_keep = j["auto_n_keep"].get<bool>();
+
 
     } catch (...) {
         LOG_S(ERROR) << "Exception when parsing config JSON";
@@ -85,8 +99,8 @@ bool Config::ParseJSON(std::string input) {
 void to_json(json& j, const Config& cfg) {
     j = json{
         {"auto_n_keep",     cfg.auto_n_keep},
-        {"char_name",       cfg.char_name},
-        {"char_avatar",     cfg.char_avatar},
+        {"char_names",      cfg.char_names},
+        {"char_avatars",    cfg.char_avatars},
         {"config_dir",      cfg.config_dir},
         {"user_name",       cfg.user_name},
         {"user_avatar",     cfg.user_avatar},
@@ -98,7 +112,8 @@ void to_json(json& j, const Config& cfg) {
         {"ui_dir",          cfg.ui_dir},
         {"ui_style",        cfg.ui_style},
         {"userscripts_dir", cfg.userscripts_dir},
-        {"gpt_params",      cfg.gpt_parameters} // TODO: should we use gpt_json here?
+        {"n_chars",         cfg.n_chars},
+        {"gpt_params",      cfg.gpt_parameters}
     };
 }
 

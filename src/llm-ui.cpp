@@ -3,8 +3,10 @@
 
 bool LLMUI::OnInit() {
     
-    loguru::init(wxApp::argc, wxApp::argv); // init logger
-
+    // turn off initial log output and init logger
+    loguru::g_stderr_verbosity = loguru::Verbosity_OFF;
+    loguru::init(wxApp::argc, wxApp::argv);
+    
     // Query available screen size and calculate reasonable dimension for the window
     int height = wxSystemSettings::GetMetric(wxSYS_SCREEN_Y);
     int width = wxSystemSettings::GetMetric(wxSYS_SCREEN_X);

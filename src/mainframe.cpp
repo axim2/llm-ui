@@ -43,6 +43,9 @@ MainFrame::MainFrame(const wxString& title, const wxPoint& pos, const wxSize& si
             break; 
     }
     
+    loguru::g_stderr_verbosity = 9; // restore logging output
+
+    
     wxString tmp; // std::string doesn't work here
     if (parser.Found("c", &tmp)) { // config file
         this->config_file = tmp;
@@ -68,10 +71,10 @@ MainFrame::MainFrame(const wxString& title, const wxPoint& pos, const wxSize& si
 
     if (parser.Found("p", &tmp)) { // prompt
         this->config->prompt = tmp;
-        this->config->gpt_parameters.prompt = tmp;
+        this->config->gpt_parameters.at(0).prompt = tmp; // FIXME
     }
     
-    while (!this->InitializeModel()) { // show dialog to load model
+    while (!this->InitializeModels()) { // show dialog to load model
         wxFileDialog openFileDialog(this, _("Select model file"), this->config->model_dir, "",
                        "*", wxFD_OPEN|wxFD_FILE_MUST_EXIST);
         
@@ -88,7 +91,10 @@ MainFrame::MainFrame(const wxString& title, const wxPoint& pos, const wxSize& si
 
     this->webview = new Webview(this, this->config->ui_dir, this->config->ui_style,
                                 this->config->userscripts_dir, this->config->avatar_dir);
-    this->model->SetWebview(this->webview);
+    
+    for (uint32_t i = 0; i < this->models.size(); i++) {
+        this->models.at(i)->SetWebview(this->webview);
+    }
     
     // build GUI
     wxInitAllImageHandlers();
@@ -148,11 +154,14 @@ void MainFrame::OnExit(wxCommandEvent& event) {
 }
 
 void MainFrame::OnClose(wxCloseEvent& event) {
-    if (this->model) {
-        this->model->StopGeneration();
-        while (this->model->GetBusy()) // we need to wait if model is processing prompt/input
-            sleep(0.1);
-        delete this->model;
+    
+    for (uint32_t i = 0; i < this->models.size(); i++) {
+        if (this->models.at(i)) {
+            this->models.at(i)->StopGeneration();
+            while (this->models.at(i)->GetBusy()) // we need to wait if model is processing prompt/input
+                sleep(0.1);
+            delete this->models.at(i);
+        }
     }
     delete this->webview;
     
@@ -163,45 +172,57 @@ void MainFrame::OnClose(wxCloseEvent& event) {
 }
 
 
-bool MainFrame::InitializeModel(void) {
-
-    if (this->model) {
-        // if generation is running, we must stop it before deleting the model
-        this->model->StopGeneration();
-        while (this->model->GetBusy()) // we need to wait if model is processing prompt/input
-            sleep(0.1);
-        delete this->model;
+bool MainFrame::InitializeModels(void) {
+    
+    uint32_t i;
+    
+    // delete old models if they exist
+    for (i = 0; i < this->models.size(); i++) {
+        if (this->models.at(i)) {
+            // if generation is running, we must stop it before deleting the model
+            this->models.at(i)->StopGeneration();
+            while (this->models.at(i)->GetBusy()) // we need to wait if model is processing prompt/input
+                sleep(0.1);
+            delete this->models.at(i);
+        }        
     }
+    
+    // create new models
+    for (i = 0; (int)i < this->config->n_chars; i++) {
+        if (this->models.size() <= i) { // create new vector element
+            this->models.push_back(new Model(this->webview, this->config, i));
+        } else { // use existing element
+            this->models.at(i) = new Model(this->webview, this->config, i);
+        }
+        this->models.at(i)->SetGPTParams(this->config->gpt_parameters.at(i));
         
-    this->model = new Model(this->webview, this->config);
-    this->model->SetGPTParams(this->config->gpt_parameters);
-        
-    // check that the model file exists
-    std::ifstream file;
-    std::string model_path = this->config->model_dir + "/" + this->config->model_file;
-    file.open(model_path);
-    if (file.good()) {
-        if (this->model->LoadModel(model_path)) {
-            this->config->gpt_parameters.model = model_path;
-        } else { // invalid model file
+        // check that the model file exists
+        std::ifstream file;
+        std::string model_path = this->config->model_dir + "/" + this->config->model_file;
+        file.open(model_path);
+        if (file.good()) {
+            if (this->models.at(i)->LoadModel(model_path)) {
+                this->config->gpt_parameters.at(i).model = model_path;
+            } else { // invalid model file
+                return false;
+            }
+        } else { // model file not found or not accessible
             return false;
         }
-    } else { // model file not found or not accessible
-        return false;
     }
     
     return true;
 }
 
 
-// Creates a list of available models and stores it to the this->models
+// Creates a list of available models and stores it to the this->model_files
 void MainFrame::CreateModelList(void) {
     try {
         for (const auto& entry : fs::directory_iterator(this->config->model_dir)) {
             if (!entry.is_directory()) {
                 // do sanity check on file size
                 if (entry.file_size() > 100000000) // 100MB
-                    this->models.insert(entry.path().filename().string());
+                    this->model_files.insert(entry.path().filename().string());
             }
         }
      } catch (...) {
@@ -213,9 +234,12 @@ void MainFrame::CreateModelList(void) {
 
 void MainFrame::OnSaveConversation(wxCommandEvent& event) {
 
-    if (this->model->GetBusy()) { // can't save if we are busy generating
-        LOG_S(WARNING) << "Can't save conversation while generating output";
-        return;
+    // FIXME: check for paused status, if model is paused but busy we can save logs
+    for (uint32_t i = 0; i < this->models.size(); i++) {
+        if (this->models.at(i)->GetBusy()) { // can't save if we are busy generating
+            LOG_S(WARNING) << "Can't save conversation while generating output";
+            return;
+        }
     }
 
     wxString output;
@@ -257,7 +281,7 @@ void MainFrame::OnLoadConfig(wxCommandEvent& event) {
 
     this->config_file = openFileDialog.GetPath().utf8_string();
     this->config->ParseFile(this->config_file);
-    InitializeModel(); // reloads the model
+    InitializeModels(); // reloads the model
     SetUIParameters(); // send new config to UI
 }
 
@@ -314,16 +338,21 @@ bool MainFrame::SaveJSON(json j, std::string file_path) {
 
 // for testing
 void MainFrame::OnGenerate(wxCommandEvent& event) {
-    std::thread thread(&Model::GenerateOutput, this->model, "Hi there");
+    std::thread thread(&Model::GenerateOutput, this->models.at(0), "Hi there");
     thread.detach();
 }
 
 void MainFrame::OnPause(wxCommandEvent& event) {
-    this->model->ToggleGeneration();
+    for (uint32_t i = 0; i < this->models.size(); i++) {
+        if (this->models.at(i)->GetBusy())
+            this->models.at(i)->ToggleGeneration();
+    }
 }
 
 void MainFrame::OnStop(wxCommandEvent& event) {
-    this->model->StopGeneration();
+    for (uint32_t i = 0; i < this->models.size(); i++) {
+        this->models.at(i)->StopGeneration();
+    }
 }
 
 void MainFrame::OnReloadUI(wxCommandEvent& event) {
@@ -336,27 +365,34 @@ void MainFrame::OnReloadUI(wxCommandEvent& event) {
 
 // process command from UI
 void MainFrame::WebviewCommand(wxWebViewEvent& event) {
-    
+
+    uint32_t i;
     json j = json::parse(event.GetString()); // parse incoming message as JSON
 
     // check for commands, unfortunately C++ doesn't support switch statement on strings
     if (j["cmd"] == "start generation") {
         std::string prompt = j["params"]["prompt"];
+        int n = j["params"]["char_index"].get<int>();
         prompt = utils::CleanJSString(prompt);
-        std::thread thread(&Model::GenerateOutput, this->model, prompt);
+        std::thread thread(&Model::GenerateOutput, this->models.at(n), prompt);
         thread.detach();
         
     } else if (j["cmd"] == "continue generation") {
-        
+        int n = j["params"]["char_index"].get<int>();
         std::string input = j["params"]["input"];
         input = utils::CleanJSString(input);
-        this->model->AddUserInput(input);
+        this->models.at(n)->AddUserInput(input);
         
     } else if (j["cmd"] == "toggle generation") {
-        this->model->ToggleGeneration();
+        for (i = 0; i < this->models.size(); i++) {
+            if (this->models.at(i)->GetBusy())
+                this->models.at(i)->ToggleGeneration();
+        }
         
     } else if (j["cmd"] == "stop generation") {
-        this->model->StopGeneration();
+        for (i = 0; i < this->models.size(); i++) {
+            this->models.at(i)->StopGeneration();
+        }
         
     } else if (j["cmd"] == "get params") {
         SetUIParameters();
@@ -366,14 +402,16 @@ void MainFrame::WebviewCommand(wxWebViewEvent& event) {
             // JSON library doesn't support getting child objects, they must be parsed as strings
             std::string params_s = j["params"]["params"];
             this->config->ParseJSON(params_s);
-            this->model->SetGPTParams(this->config->gpt_parameters, true);
+            for (i = 0; i < this->models.size(); i++) { // FIXME: different params for each model
+                this->models.at(0)->SetGPTParams(this->config->gpt_parameters.at(0), true);
+            }
         }
         
     } else if (j["cmd"] == "load model") {
         if (j.contains("model")) {
             std::string old_model = this->config->model_file; // save just in case
             this->config->model_file = j["model"].get<std::string>();
-            if (InitializeModel()) { // model loaded successfully
+            if (InitializeModels()) { // model loaded successfully
                 SetUIParameters(); // send new parameters to UI
             } else { // some error
                 this->webview->GetBrowser()->RunScript("updateStatusbar('Error loading model: " + this->config->model_file + "');");    
@@ -391,7 +429,7 @@ void MainFrame::WebviewCommand(wxWebViewEvent& event) {
 
 void MainFrame::WebviewOnLoaded(wxWebViewEvent& event) {
     // send list of models and current settings to the Webview
-    json j = this->models;
+    json j = this->model_files;
     this->webview->GetBrowser()->RunScript("parseModels('" + j.dump() + "');");    
     SetUIParameters();
 }
@@ -401,7 +439,9 @@ void MainFrame::WebviewOnLoaded(wxWebViewEvent& event) {
 void MainFrame::SetUIParameters(void) {
     json params_j = *this->config;
     params_j["prompt"] = utils::CleanStringForJS(params_j["prompt"]);
-    params_j["gpt_params"]["prompt"] = utils::CleanStringForJS(params_j["gpt_params"]["prompt"]);
+    
+    for (int i = 0; i < this->config->n_chars; i++)
+        params_j["gpt_params"][i]["prompt"] = utils::CleanStringForJS(params_j["gpt_params"][i]["prompt"]);
     std::string params_s = params_j.dump();
     this->webview->GetBrowser()->RunScript("parseParams('" + params_s + "');");
 }

@@ -13,9 +13,10 @@
     <button class="toolbar-button" onclick="stopGeneration()">Stop</button>
     <button class="toolbar-button" onclick="reloadParams()">Reload Params</button>
     <button class="toolbar-button" onclick="showSettingsUI()">Settings</button>
-    Model: <select name="model" id="model" onchange="loadModel(this.value)"></select>
+    Model: <select name="model" id="model" class="toolbar-button" onchange="loadModel(this.value)"></select>
   </div>
   <header class="header">
+    <!--<div class="base-prompt"><h3>Base prompt(s)...</h3></div>-->
     <div class="base-prompt"></div>
   </header>
 

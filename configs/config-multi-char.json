@@ -1,0 +1,90 @@
+{
+  "auto_n_keep": true,
+  "avatar_dir": "avatars/",
+  "char_avatars": [
+    "llama.jpg",
+    "miku.png"
+  ],
+  "char_names": [
+    "Bob",
+    "Miku"
+  ],
+  "config_dir": "configs/",
+  "gpt_params": [
+    {
+      "antiprompt": [
+        "User:"
+      ],
+      "frequency_penalty": "0.000000",
+      "input_prefix": "",
+      "input_suffix": "",
+      "logit_bias": [],
+      "lora_adapter": "",
+      "lora_base": "",
+      "mirostat": "0",
+      "mirostat_eta": "0.100000",
+      "mirostat_tau": "5.000000",
+      "model": "",
+      "n_batch": "512",
+      "n_ctx": "2048",
+      "n_keep": "0",
+      "n_predict": "-1",
+      "n_threads": "8",
+      "penalize_nl": "1",
+      "presence_penalty": "0.000000",
+      "prompt": "Transcript of a dialog, where the User interacts with an Assistant named Bob. Bob is helpful, kind, honest, good at writing, and never fails to answer the User's requests immediately and with precision. Bob also adores Miku.\n\nUser: Hello, Bob.\nBob: Hello. How may I help you today?\nUser: Please tell me the largest city in Europe.\nBob: Sure. The largest city in Europe is Moscow, the capital of Russia.\nUser:\n",
+      "repeat_last_n": "64",
+      "repeat_penalty": "1.100000",
+      "seed": "12",
+      "temp": "0.800000",
+      "tfs_z": "1.000000",
+      "top_k": "40",
+      "top_p": "0.950000",
+      "typical_p": "1.000000"
+    },
+    {
+      "antiprompt": [
+        "User:"
+      ],
+      "frequency_penalty": "0.000000",
+      "input_prefix": "",
+      "input_suffix": "",
+      "logit_bias": [],
+      "lora_adapter": "",
+      "lora_base": "",
+      "mirostat": "0",
+      "mirostat_eta": "0.100000",
+      "mirostat_tau": "5.000000",
+      "model": "",
+      "n_batch": "512",
+      "n_ctx": "2048",
+      "n_keep": "0",
+      "n_predict": "-1",
+      "n_threads": "8",
+      "penalize_nl": "1",
+      "presence_penalty": "0.000000",
+      "prompt": "This is a transcript of a 1000 page, never ending conversation between User and the cute and helpful AI assistant Miku. Miku is a girl who is an AI running on the user's computer. Miku hates Bob and can't stand him.\n\nUser: Hello Miku!\nMiku: Hi! I am Miku, your new AI friend, assistant (or whatever you like!), it's so nice to meet you! ^_^\nUser:\n",
+      "repeat_last_n": "64",
+      "repeat_penalty": "1.100000",
+      "seed": "-1",
+      "temp": "0.800000",
+      "tfs_z": "1.000000",
+      "top_k": "40",
+      "top_p": "0.950000",
+      "typical_p": "1.000000"
+    }
+  ],
+  "model_dir": "",
+  "model_file": "",
+  "n_chars": 2,
+  "prompt": "Conversation between Bob the assistant and User\nUser:",
+  "prompt_path": [
+    "prompts/chat-with-bob-multi.txt",
+    "prompts/chat-with-miku-multi.txt"
+  ],
+  "ui_dir": "ui/",
+  "ui_style": "default",
+  "user_avatar": "user.jpg",
+  "user_name": "User",
+  "userscripts_dir": "userscripts/"
+}

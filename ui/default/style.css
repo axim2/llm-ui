@@ -164,6 +164,18 @@ body {
 .toolbar-button {
   margin: 5px;
   color: #004;
+  font-size: small;
+}
+
+.base-prompt {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 1; /* number of lines to show */
+  -webkit-box-orient: vertical;
+}
+
+.base-prompt:hover {
+  display: block;
 }
 
 
