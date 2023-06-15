@@ -560,7 +560,7 @@ bool Model::ToggleGeneration(void) {
     
     if (this->pause.test()) { // Resuming, clear
         this->pause.clear();
-        this->webview->GetBrowser()->RunScript("generationg();");
+        this->webview->GetBrowser()->RunScript("generating();");
     } else { // Pausing, set pause flag
         this->pause.test_and_set();
         this->webview->GetBrowser()->RunScript("generationPaused();");
