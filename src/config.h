@@ -31,10 +31,9 @@ public:
     
     bool ParseFile(std::string filename);
     bool ParseJSON(std::string json);
-    
-    
-    std::string char_name   = DEFAULT_CHAR_NAME;
-    std::string char_avatar = DEFAULT_CHAR_AVATAR;
+
+    std::vector<std::string> char_names     = {DEFAULT_CHAR_NAME};
+    std::vector<std::string> char_avatars   = {DEFAULT_CHAR_AVATAR};
     std::string config_dir  = DEFAULT_CONFIG_DIR;
     std::string user_name   = DEFAULT_USER_NAME;
     std::string user_avatar = DEFAULT_USER_AVATAR;
@@ -42,14 +41,14 @@ public:
     std::string model_file;
     std::string avatar_dir;
     std::string prompt      = DEFAULT_PROMPT;
-    std::string prompt_path = DEFAULT_PROMPT_PATH;
+    std::vector<std::string> prompt_path = {DEFAULT_PROMPT_PATH};
     std::string ui_dir      = DEFAULT_UI_DIR;
     std::string ui_style    = DEFAULT_UI_STYLE;
     std::string userscripts_dir;
     bool        auto_n_keep = false;
+    int         n_chars     = 1;
     json gpt_json; // GPT params as JSON object before parsing
-    gpt_params gpt_parameters; 
-
+    std::vector<gpt_params> gpt_parameters;
 };
 
 void to_json(json& j, const Config& cfg);

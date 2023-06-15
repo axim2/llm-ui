@@ -3,11 +3,12 @@
 #include "model.h"
 
 
-Model::Model(Webview *webview, Config *config) {
+Model::Model(Webview *webview, Config *config, int char_index) {
     
     this->webview = webview;
     this->config = config;
-
+    this->char_index = char_index;
+    
     // just in case
     this->stop.clear();
     this->pause.clear();
@@ -24,6 +25,7 @@ Model::~Model() {
 // loads LLM model
 bool Model::LoadModel(std::string model_path) {
     
+    LOG_S(INFO) << "Loading model: " << this->char_index << "\n";
     this->params.model = model_path;
 
     auto lparams = llama_context_default_params();
@@ -106,6 +108,24 @@ bool Model::GenerateOutput(std::string prompt) {
     this->pause.clear();
         
     this->busy = true;
+
+    int i;
+
+    // if n_chars > 1, add names of other chars to antiprompt
+    if (this->config->n_chars > 1) {
+        for (i = 0; i < this->config->n_chars; i++) {
+            if (i != this->char_index) { // ignore us
+                if (!std::count(this->params.antiprompt.begin(), 
+                    this->params.antiprompt.end(),
+                    this->config->char_names.at(i))) {
+                    // add it to the antiprompt
+                    this->params.antiprompt.push_back(this->config->char_names.at(i) + ":");
+                    LOG_S(INFO) << "Adding: '" << this->config->char_names.at(i) << "' to antiprompt.";
+                }
+            }
+        }
+    }
+
     
     //std::string path_session = this->params.path_session;
     std::string path_session = this->params.path_prompt_cache;
@@ -115,12 +135,13 @@ bool Model::GenerateOutput(std::string prompt) {
     params.prompt = prompt;
     // Add a space in front of the first character to match OG llama tokenizer behavior
     this->params.prompt.insert(0, 1, ' ');
-    this->webview->GetBrowser()->RunScript("updateStatusbar('Tokenizing and processing prompt');");
+    this->webview->GetBrowser()->RunScript("tokenizing();");
     auto embd_inp = ::llama_tokenize(ctx, params.prompt, true);
     
     const auto inp_pfx = ::llama_tokenize(ctx, "\n\n### Instruction:\n\n", true);
     const auto inp_sfx = ::llama_tokenize(ctx, "\n\n### Response:\n\n", false);
     auto llama_token_newline = ::llama_tokenize(ctx, "\n", false);
+    auto user_tokens = ::llama_tokenize(ctx, this->config->user_name + ":", false);
     
     const int n_ctx = llama_n_ctx(ctx);
 
@@ -130,10 +151,9 @@ bool Model::GenerateOutput(std::string prompt) {
     }
     
     // if n_keep == true and auto_n_keep == true, set n_keep to base prompt 
-    // (before user/char lines)
+    // (before user/char lines) TODO: take into account all chars!
     if ((this->params.n_keep == 0) && (this->config->auto_n_keep)) {
-        auto user_tokens = ::llama_tokenize(ctx, this->config->user_name + ":", false);
-        auto char_tokens = ::llama_tokenize(ctx, this->config->char_name + ":", false);
+        auto char_tokens = ::llama_tokenize(ctx, this->config->char_names.at(this->char_index) + ":", false);
 
         auto user_iter = std::search(embd_inp.begin(), embd_inp.end(), 
                                      user_tokens.begin(), user_tokens.end());
@@ -166,9 +186,10 @@ bool Model::GenerateOutput(std::string prompt) {
     
     //printPrompt();
     fprintf(stderr, "\n");
-    fprintf(stderr, "%s: prompt: '%s'\n", __func__, this->params.prompt.c_str());
+    fprintf(stderr, "%s: char: %d, prompt: '%s'\n", __func__, this->char_index, 
+            this->params.prompt.c_str());
     fprintf(stderr, "%s: number of tokens in prompt = %zu\n", __func__, embd_inp.size());
-    for (int i = 0; i < (int) embd_inp.size(); i++) {
+    for (i = 0; i < (int) embd_inp.size(); i++) {
         fprintf(stderr, "%6d -> '%s'\n", embd_inp[i], llama_token_to_str(this->ctx, embd_inp[i]));
     }
     if (this->params.n_keep > 0) {
@@ -471,7 +492,7 @@ bool Model::GenerateOutput(std::string prompt) {
                         this->new_input.clear();
                         this->new_input_mutex.unlock();
                         this->pause.clear(); // continue
-                        this->webview->GetBrowser()->RunScript("updateStatusbar('Generating...');");
+                        this->webview->GetBrowser()->RunScript("generating();");
                     }
                 }
 
@@ -539,7 +560,7 @@ bool Model::ToggleGeneration(void) {
     
     if (this->pause.test()) { // Resuming, clear
         this->pause.clear();
-        this->webview->GetBrowser()->RunScript("generationResumed();");
+        this->webview->GetBrowser()->RunScript("generating();");
     } else { // Pausing, set pause flag
         this->pause.test_and_set();
         this->webview->GetBrowser()->RunScript("generationPaused();");
@@ -559,6 +580,8 @@ bool Model::StopGeneration(void) {
 // adds user input from UI for the generation thread to use
 bool Model::AddUserInput(std::string input) {
     // TODO: check for busy status
+    LOG_S(INFO) << "Adding input for char " << this->char_index << " (" <<
+        this->config->char_names[this->char_index] << "):\n" << input;
     this->new_input_mutex.lock();
     this->new_input = input;
     this->new_input_mutex.unlock();

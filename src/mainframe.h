@@ -55,7 +55,7 @@ private:
 
     void WebviewCommand(wxWebViewEvent& event); 
     
-    bool InitializeModel(void);
+    bool InitializeModels(void);
     void CreateModelList(void);
     bool SaveConfig(std::string file_path);
     bool SaveJSON(json j, std::string file_path);
@@ -65,11 +65,11 @@ private:
     wxDECLARE_EVENT_TABLE();
     
     Config *config;
-    Model *model = nullptr;
+    std::vector<Model *> models;
     Webview *webview;
     
     std::string config_file; // current configuration file
-    std::set<std::string> models; // list of available models
+    std::set<std::string> model_files; // list of available model files
 };
 
 

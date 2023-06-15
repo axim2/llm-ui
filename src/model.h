@@ -41,7 +41,7 @@ struct llama_vocab {
 
 class Model {
 public:
-    explicit Model(Webview *webview, Config *config);
+    explicit Model(Webview *webview, Config *config, int char_index = 0);
     ~Model();
     
     bool LoadModel(std::string model_path);
@@ -66,22 +66,23 @@ private:
     
     gpt_params params;
     llama_context *ctx = nullptr;
-    Webview *webview; // used for communication with the HTML UI
-    Config *config; // pointer to config class
+    inline static Webview *webview; // used for communication with the HTML UI
+    inline static Config *config; // pointer to config class
     
-    inline static bool is_interacting = false;
-    inline static bool busy = false;
-    inline static std::atomic_flag stop = ATOMIC_FLAG_INIT;
-    inline static std::atomic_flag pause = ATOMIC_FLAG_INIT;
+    bool is_interacting = false;
+    bool busy = false;
+    std::atomic_flag stop = ATOMIC_FLAG_INIT;
+    std::atomic_flag pause = ATOMIC_FLAG_INIT;
     
-    inline static std::string new_input;
+    std::string new_input;
     std::mutex new_input_mutex;
 
     int n_consumed;
+    int char_index; // which character this models handles? 0 - first character
     std::vector<llama_token> last_n_tokens;
         
     inline static console_state con_st;
-    inline static std::vector<llama_token> evaluated_tokens;
+    std::vector<llama_token> evaluated_tokens;
 };
 
 #endif // MODEL_H
