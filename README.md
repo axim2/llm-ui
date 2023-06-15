@@ -4,7 +4,7 @@ LLM-UI is a native UI for large language models, it uses [llama.cpp](https://git
 
 
 ## Features
-
+- Support for multiple characters, each with its own context. Try `./llm-ui -c configs/config-multi-char.json` as an exampe. https://github.com/axim2/llm-ui/pull/1
 - Shows LLM's output in real-time.
 - Supports all models which are supported by [llama.cpp](https://github.com/ggerganov/llama.cpp).
 - Lightweight native application, doesn't require network connectivity, Python, or Node.js.
