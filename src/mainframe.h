@@ -14,6 +14,7 @@
 #include <wx/filesys.h>
 #include <wx/gbsizer.h>
 #include <wx/log.h>
+#include <wx/display.h>
 
 #include <stddef.h>
 

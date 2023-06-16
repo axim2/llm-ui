@@ -6,18 +6,8 @@ bool LLMUI::OnInit() {
     // turn off initial log output and init logger
     loguru::g_stderr_verbosity = loguru::Verbosity_OFF;
     loguru::init(wxApp::argc, wxApp::argv);
-    
-    // Query available screen size and calculate reasonable dimension for the window
-    int height = wxSystemSettings::GetMetric(wxSYS_SCREEN_Y);
-    int width = wxSystemSettings::GetMetric(wxSYS_SCREEN_X);
-    if (width > 1280) {
-        width = width > 1600 ? 0.75*width : 0.9*width;
-    } 
-    if (height > 768) {
-        height = height > 1080 ? 0.75*height : 0.9*height;
-    }
-    
-    this->frame = new MainFrame("LLM-UI", wxPoint(0, 0), wxSize(width, height), 
+
+    this->frame = new MainFrame("LLM-UI", wxPoint(0, 0), wxSize(0, 0), 
                               wxApp::argc, wxApp::argv);
     this->frame->Show(true);
 

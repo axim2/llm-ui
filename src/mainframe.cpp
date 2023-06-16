@@ -45,7 +45,21 @@ MainFrame::MainFrame(const wxString& title, const wxPoint& pos, const wxSize& si
     
     loguru::g_stderr_verbosity = 9; // restore logging output
 
-    
+    // Query available screen size and calculate reasonable dimension for the window
+    wxDisplay display = wxDisplay(this); // get current screen
+    wxRect rect = display.GetClientArea();
+    int height = rect.GetHeight();
+    int width = rect.GetWidth();
+    if (width > 1280) {
+        width = width > 1600 ? 0.75*width : 0.9*width;
+    }
+    if (height > 768) {
+        height = height > 1080 ? 0.9*height : 0.95*height; // height is more important for us
+    }
+    this->SetSize(wxDefaultCoord, wxDefaultCoord, width, height);
+    LOG_S(INFO) << "Setting window size to: " << width << "x" << height;
+
+    // handle command line parameters
     wxString tmp; // std::string doesn't work here
     if (parser.Found("c", &tmp)) { // config file
         this->config_file = tmp;
