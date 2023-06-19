@@ -84,8 +84,7 @@ MainFrame::MainFrame(const wxString& title, const wxPoint& pos, const wxSize& si
     }
 
     if (parser.Found("p", &tmp)) { // prompt
-        this->config->prompt = tmp;
-        this->config->gpt_parameters.at(0).prompt = tmp; // FIXME
+        this->config->gpt_parameters.at(0).prompt = tmp; // FIXME: handle multiple chars here
     }
     
     while (!this->InitializeModels()) { // show dialog to load model
@@ -415,9 +414,12 @@ void MainFrame::WebviewCommand(wxWebViewEvent& event) {
         if (j.contains("params")) { // convert params from JSON and save them
             // JSON library doesn't support getting child objects, they must be parsed as strings
             std::string params_s = j["params"]["params"];
+            params_s = utils::CleanJSString(params_s);
+
+            //LOG_S(INFO) << "Received new params from UI: " << params_s;
             this->config->ParseJSON(params_s);
-            for (i = 0; i < this->models.size(); i++) { // FIXME: different params for each model
-                this->models.at(0)->SetGPTParams(this->config->gpt_parameters.at(0), true);
+            for (i = 0; i < this->models.size(); i++) {
+                this->models.at(i)->SetGPTParams(this->config->gpt_parameters.at(i), true);
             }
         }
         
@@ -452,7 +454,6 @@ void MainFrame::WebviewOnLoaded(wxWebViewEvent& event) {
 // sends current parameters to the UI
 void MainFrame::SetUIParameters(void) {
     json params_j = *this->config;
-    params_j["prompt"] = utils::CleanStringForJS(params_j["prompt"]);
     
     for (int i = 0; i < this->config->n_chars; i++)
         params_j["gpt_params"][i]["prompt"] = utils::CleanStringForJS(params_j["gpt_params"][i]["prompt"]);

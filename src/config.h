@@ -10,7 +10,6 @@ using json = nlohmann::json;
 
 #include "examples/common.h"
 
-#define DEFAULT_PROMPT          "Conversation between Bob the assistant and User\nUser:"
 #define DEFAULT_PROMPT_PATH     "llama.cpp/prompts/chat-with-bob.txt"
 #define DEFAULT_USER_NAME       "User"
 #define DEFAULT_USER_AVATAR     "user.jpg"
@@ -40,7 +39,6 @@ public:
     std::string model_dir;
     std::string model_file;
     std::string avatar_dir;
-    std::string prompt      = DEFAULT_PROMPT;
     std::vector<std::string> prompt_path = {DEFAULT_PROMPT_PATH};
     std::string ui_dir      = DEFAULT_UI_DIR;
     std::string ui_style    = DEFAULT_UI_STYLE;
