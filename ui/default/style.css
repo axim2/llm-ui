@@ -195,6 +195,7 @@ body {
 }
 
 
+
 /* Close button */
 .close {
   color: #555;
@@ -221,6 +222,26 @@ body {
   background-color: #cce;
 }
 
+/* buttons that are used to open the settings tabs */
+.popup-header button {
+  background-color: inherit;
+  float: left;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  padding: 14px 14px;
+  transition: 0.3s;
+}
+
+.popup-header button:hover {
+  background-color: #b8b8d8;
+}
+
+.popup-header button.active {
+  background-color: #bbd;
+}
+
+
 .popup-body {
   padding: 2px 16px;
 }
@@ -242,6 +263,13 @@ body {
   box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
 }
 
+/* tab containing settings */
+.settings-tab {
+  display: none;
+  padding: 6px 12px;
+  border: 1px solid #ccc;
+  border-top: none;
+}
 
 /* Settings */
 .settings-entry {
@@ -253,7 +281,7 @@ body {
   width: 32%;
 }
 
-#setting-prompt, #setting-antiprompt {
+.setting-prompt, .setting-antiprompt {
   width: 99%;
   display: inline-block;
 }
@@ -272,7 +300,13 @@ body {
   float: right;
 }
 
-#prompt-value, #antiprompt-value, #logit_bias-value {
+.prompt-value, .antiprompt-value, .logit_bias-value {
   font-size: medium;
   width: 100%;
+}
+
+input[type="checkbox"] {
+  margin-right: 10px;
+  height: 5%;
+  width: 5%;
 }

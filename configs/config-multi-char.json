@@ -77,7 +77,6 @@
   "model_dir": "",
   "model_file": "",
   "n_chars": 2,
-  "prompt": "Conversation between Bob the assistant and User\nUser:",
   "prompt_path": [
     "prompts/chat-with-bob-multi.txt",
     "prompts/chat-with-miku-multi.txt"

@@ -33,52 +33,60 @@
 <!-- popup for settings -->
 <div class="popup" id="settings-popup">
   <div class="popup-content">
-    <div class="popup-header">
+    <div class="popup-header" id="settings-header">
       <span class="close">&times;</span>
-      <h2>Settings</h2>
+      <button class="settings-link" id="settings-button-general" onclick="openSettingsTab(event, 'settings-general')">General</button>
+      <button class="settings-link" id="settings-button-0" onclick="openSettingsTab(event, 'settings-0')"></button>
     </div>
     <div class="popup-body" id="settings-body">
-      <div class="settings-entry" id="setting-prompt">
-        <div class="settings-entry-text" id="prompt-text">Prompt</div>
-        <textarea class="settings-entry-value" id="prompt-value" rows="10" cols="60"></textarea>
+      <div class="settings-tab" id="settings-general">
+        <div class="settings-entry setting-auto_n_keep">
+          <div class="settings-entry-text auto_n_keep-text">Calculate n_keep</div>
+          <input type="checkbox" class="settings-entry-value auto_n_keep-value"></input>
+        </div>
       </div>
-      <div class="settings-entry" id="setting-antiprompt">
-        <div class="settings-entry-text" id="antiprompt-text">Reverse prompts</div>
-        <textarea class="settings-entry-value" id="antiprompt-value" rows="2" cols="60"></textarea>
+      <div class="settings-tab" id="settings-0">
+        <div class="settings-entry setting-prompt">
+          <div class="settings-entry-text prompt-text">Prompt</div>
+          <textarea class="settings-entry-value prompt-value" rows="10" cols="60"></textarea>
+        </div>
+        <div class="settings-entry setting-antiprompt">
+          <div class="settings-entry-text antiprompt-text">Reverse prompts</div>
+          <textarea class="settings-entry-value antiprompt-value" rows="2" cols="60"></textarea>
+        </div>
+        <div class="settings-entry setting-seed">
+          <div class="settings-entry-text seed-text">Random seed</div>
+          <input class="settings-entry-value seed-value" maxlength="10" size="10"></input>
+        </div>
+        <div class="settings-entry setting-n_ctx">
+          <div class="settings-entry-text n_ctx-text">Context size</div>
+          <input class="settings-entry-value n_ctx-value" maxlength="7" size="7"></input>
+        </div>
+        <div class="settings-entry setting-n_keep">
+          <div class="settings-entry-text n_keep-text">Keep tokens</div>
+          <input class="settings-entry-value n_keep-value" maxlength="7" size="7"></input>
+        </div>
+        <div class="settings-entry setting-n_predict">
+          <div class="settings-entry-text n_predict-text">Predict tokens</div>
+          <input class="settings-entry-value n_predict-value" maxlength="7" size="7"></input>
+        </div>
+        <div class="settings-entry setting-temp">
+          <div class="settings-entry-text temp-text">Temperature</div>
+          <input class="settings-entry-value temp-value" maxlength="10" size="10"></input>
+        </div>
+        <div class="settings-entry setting-top_k">
+          <div class="settings-entry-text top_k-text">Top K</div>
+          <input class="settings-entry-value top_k-value" maxlength="7" size="7"></input>
+        </div>
+        <div class="settings-entry setting-top_p">
+          <div class="settings-entry-text top_p-text">Top P</div>
+          <input class="settings-entry-value top_p-value" maxlength="7" size="7"></input>
+        </div>
+        <div class="settings-entry setting-logit_bias">
+          <div class="settings-entry-text logit_bias-text">Logit bias</div>
+          <textarea class="settings-entry-value logit_bias-value" rows="1" columns="10"></textarea>
+        </div>
       </div>
-      <div class="settings-entry" id="setting-seed">
-        <div class="settings-entry-text" id="seed-text">Random seed</div>
-        <input class="settings-entry-value" id="seed-value" maxlength="10" size="10"></input>
-      </div>
-      <div class="settings-entry" id="setting-n_ctx">
-        <div class="settings-entry-text" id="n_ctx-text">Context size</div>
-        <input class="settings-entry-value" id="n_ctx-value" maxlength="7" size="7"></input>
-      </div>
-      <div class="settings-entry" id="setting-n_keep">
-        <div class="settings-entry-text" id="n_keep-text">Keep tokens</div>
-        <input class="settings-entry-value" id="n_keep-value" maxlength="7" size="7"></input>
-      </div>
-      <div class="settings-entry" id="setting-n_predict">
-        <div class="settings-entry-text" id="n_predict-text">Predict tokens</div>
-        <input class="settings-entry-value" id="n_predict-value" maxlength="7" size="7"></input>
-      </div>
-      <div class="settings-entry" id="setting-temp">
-        <div class="settings-entry-text" id="temp-text">Temperature</div>
-        <input class="settings-entry-value" id="temp-value" maxlength="10" size="10"></input>
-      </div>
-      <div class="settings-entry" id="setting-top_k">
-        <div class="settings-entry-text" id="top_k-text">Top K</div>
-        <input class="settings-entry-value" id="top_k-value" maxlength="7" size="7"></input>
-      </div>
-      <div class="settings-entry" id="setting-top_p">
-        <div class="settings-entry-text" id="top_p-text">Top P</div>
-        <input class="settings-entry-value" id="top_p-value" maxlength="7" size="7"></input>
-      </div>
-      <div class="settings-entry" id="setting-logit_bias">
-        <div class="settings-entry-text" id="logit_bias-text">Logit bias</div>
-        <textarea class="settings-entry-value" id="logit_bias-value" rows="1" columns="10"></textarea>
-      </div>
-      
     </div>
     <div class="popup-footer">
       <button class="settings-button" onclick="saveSettings()">Save</button>

@@ -8,7 +8,7 @@ const statusbar = document.querySelector('.statusarea');
 const base_prompt_elem = document.querySelector('.base-prompt');
 
 var settingsPopup = document.getElementById('settings-popup');
-var settingsBody = document.getElementById('settings-body');
+var settings_body = document.getElementById('settings-body');
 
 // <span> element that closes the modal
 const span = document.getElementsByClassName("close")[0];
@@ -112,8 +112,8 @@ function waitingForInput() {
     return;
   }
   
-  updateStatusbar('Reverse prompt found, waiting for input, next char: ' 
-    + params.char_names[current_char]);
+  updateStatusbar('Reverse prompt found, waiting for input, next char: ' +
+    params.char_names[current_char]);
 }
 
 
@@ -240,8 +240,13 @@ function parseParams(new_params, show_ui = false) {
 // TODO: should we always reload params when showing settings? at least when changing random seed > -1!
 function showSettingsUI() {
 
-    populateSettingsWindow();
-    settingsPopup.style.display = "flex";
+  populateSettingsWindow();
+  settingsPopup.style.display = "flex";
+
+  // simulate click to the General tab of settings popup
+  var settings_element = document.getElementById("settings-button-general");
+  if (settings_element)
+    settings_element.click();
 }
 
 // When the user clicks on <span> (x), close the modal
@@ -256,42 +261,100 @@ window.onclick = function(event) {
   }
 };
 
+
 // populate settings window
 function populateSettingsWindow() {
-    if (params.gpt_params[0] == null) {
-        return;
+  
+  let elem, entry, entries, i, j;
+
+  if (settings_body == null)
+    window.alert("settingsBody is null");
+  
+  // set a name for settings button of the first character
+  elem = document.getElementById("settings-button-0");
+  elem.textContent = params.char_names[0];
+  
+  // generate tabs for other characters if necessary
+  for (i = 1; i < params.n_chars; i++) {
+    if (!document.getElementById("settings-" + i)) {
+      addSettingsTab(i);
     }
+  }
 
-    if (settingsBody == null)
-        window.alert("settingsBody is null");
-    
-    let entry, i;
-    
-    // FIXME: multiple gpt_params
-    for (const [key, value] of Object.entries(params.gpt_params[0])) {
+  
+  // handle general settings
+  elem = document.getElementById("settings-general");
+
+  for (const [key, value] of Object.entries(params)) {
+
+    entry = elem.getElementsByClassName(key + "-value")[0];
+
+    if (entry != null) {
+      if (key == "auto_n_keep") { // checkbox
+        if (value)
+          entry.checked = true;
+        else
+          entry.checked = false;
         
-        entry = document.getElementById(key+"-value");
-        if (entry != null) {
+      } else {
+          entry.value = value;
+      }
+    }
+  } /* for (const... */
 
-            if (key == "antiprompt") { // antiprompt is vector of strings
-              entry.value = "";
-              for (i=0; i < value.length; i++) {
-                entry.value += "[" + value.at(i) + "]";
-              }
 
+  // populate settings for each character
+  for (i = 0; i < params.n_chars; i++) {
+    elem = document.getElementById("settings-" + i);
+    
+    for (const [key, value] of Object.entries(params.gpt_params[i])) {
+    
+      entry = elem.getElementsByClassName(key + "-value")[0];
+
+      if (entry != null) {
+        
+        if (key == "antiprompt") { // antiprompt is vector of strings
+          entry.value = "";
+          for (j = 0; j < value.length; j++) {
+            entry.value += "[" + value.at(j) + "]";
+          }
+          
+        } else if (key == "logit_bias") { // logit_bias is int => float(string) map
+          entry.value = "";
               
-            } else if (key == "logit_bias") { // logit_bias is int => float(string) map
-              entry.value = "";
-              
-              for (i=0; i < value.length; i++) {
-                // each item is 2-dimensional array
-                entry.value += "[" + value.at(i).at(0) + "," + value.at(i).at(1) + "]";
-              }
-            } else {
-              entry.value = value;
-            }
+          for (j = 0; j < value.length; j++) {
+            // each item is 2-dimensional array
+            entry.value += "[" + value.at(j).at(0) + "," + value.at(j).at(1) + "]";
+          }
+          
+        } else if (entry.tagName == "TEXTAREA") { // textareas need to be handled differently
+          entry.innerHTML = value;
+          
+        } else {
+          entry.value = value;
         }
-    }    
+      }
+    } /* for (const... */    
+  } /* for (i = 0... */
+}
+
+
+// adds a tab containing character's settings
+function addSettingsTab(char_index) {
+  let parent, elem, new_elem;
+  
+  // create new button for selecting the tab
+  let html = '<button class="settings-link" id="settings-button-' + char_index + 
+    '" onclick="openSettingsTab(event, \'settings-' + char_index + '\')">' + 
+    params.char_names[char_index] + '</button>';
+  elem = document.getElementById("settings-header");
+  elem.insertAdjacentHTML("beforeend", html);
+
+  // get first character settings tab, clone, change id, and add it to the end
+  elem = document.getElementById("settings-0");
+  new_elem = elem.cloneNode(true);
+  new_elem.id = "settings-" + char_index;
+  settings_body.appendChild(new_elem);
 }
 
 
@@ -362,55 +425,83 @@ function processUserInput(input_text) {
 
 function saveSettings() {
   
-    // go through the settings and update gpt_params
-    let values = document.getElementsByClassName("settings-entry-value");
-    let i, j, name, changed = false;
+  // go through the settings and update gpt_params
+  let values = document.getElementsByClassName("settings-entry-value");
+  let i, j, k, name, changed = false, classes;
     
-    // FIXME: multiple gpt_params
-    for (i = 0; i < values.length; i++) {
-        // parse parameter name from id (id: name-value) and update associated parameter
-        name = values.item(i).id.split("-").at(0);
-        if (params.gpt_params[0][name] != values.item(i).value) {
+  // handle general settings
+  elem = document.getElementById("settings-general");
+  values = elem.getElementsByClassName("settings-entry-value");
+  
+  for (i = 0; i < values.length; i++) {
+
+    name = values.item(i).classList[1].split("-").at(0);
+    
+    if (name == "auto_n_keep") { // handle checkboxes separately
+      if (params[name] != values.item(i).checked) {
+        params[name] = values.item(i).checked;
+        changed = true;
+      }
+      
+    } else if (params[name] != values.item(i).value) { 
+      params[name] = values.item(i).value;
+      changed = true;
+    }
+  }
+
+  // handle settings of each character
+  for (i = 0; i < params.n_chars; i++) {
+
+    elem = document.getElementById("settings-" + i);
+    values = elem.getElementsByClassName("settings-entry-value");
+   
+    for (j = 0; j < values.length; j++) {
+
+      name = values.item(j).classList[1].split("-").at(0);
+      
+      if (params.gpt_params[i][name] != values.item(j).value) {
           
-          if (name == "antiprompt") { // create an array of antiprompt entries
+        if (name == "antiprompt") { // create an array of antiprompt entries
 
-            params.gpt_params[0][name] = [];
-            let tmp = values.item(i).value.split("]");
-            for (j = 0; j < tmp.length - 1; j++) { // last one is empty element
-              // remove [ from the beginning
-              params.gpt_params[0][name].push(tmp.at(j).substr(1));
-            }
-            
-          } else if (name == "logit_bias") { // create an array of antiprompt entries
-            params.gpt_params[0][name] = [];
-            var tmp = values.item(i).value.split("]");
-            for (j = 0; j < tmp.length - 1; j++) { // last one is empty element
-              let tmp2 = tmp.at(j).split(",");
-              params.gpt_params[0][name][j] = [];
-              params.gpt_params[0][name][j][0] = tmp2.at(0).substr(1); // remove [ from the beginning
-              params.gpt_params[0][name][j][1] = tmp2.at(1);
-            }
-            
-          } else {
-            params.gpt_params[0][name] = values.item(i).value;
+          params.gpt_params[i][name] = [];
+          let tmp = values.item(j).value.split("]");
+          for (k = 0; k < tmp.length - 1; k++) { // last one is empty element
+            // remove [ from the beginning
+            params.gpt_params[i][name].push(tmp.at(k).substr(1));
           }
-          changed = true;
+            
+        } else if (name == "logit_bias") { // create an array of antiprompt entries
+          params.gpt_params[i][name] = [];
+          var tmp = values.item(j).value.split("]");
+          for (k = 0; k < tmp.length - 1; k++) { // last one is empty element
+            let tmp2 = tmp.at(k).split(",");
+            params.gpt_params[i][name][k] = [];
+            params.gpt_params[i][name][k][0] = tmp2.at(0).substr(1); // remove [ from the beginning
+            params.gpt_params[i][name][k][1] = tmp2.at(1);
+          }
+            
+        } else {
+          params.gpt_params[i][name] = values.item(j).value;
         }
-    }
-    statusbar.textContent += " changed " + changed;
+        changed = true;
+      } /* if (params... */
+    } /* for (values... */
+  } /* for (n_chars... */
+  
+  statusbar.textContent += ". Settings changed: " + changed;
     
-    // if there are changes, send new params to backend
-    if (changed) {
-        let command = {};
-        command.cmd = "set params";
-        command.params = {};
-        command.params.params = JSON.stringify(params);
+  // if there are changes, send new params to backend
+  if (changed) {
+    let command = {};
+    command.cmd = "set params";
+    command.params = {};
+    command.params.params = JSON.stringify(params);
 
-        window.command.postMessage(command);
-    }
+    window.command.postMessage(command);
+  }
     
-    // hide settings popup
-    settingsPopup.style.display="none";
+  // hide settings popup
+  settingsPopup.style.display="none";
 }
 
 
@@ -449,8 +540,8 @@ function parsePrompt(prompt, char_index) {
   if (char_index > 0) // add line break before next char's base prompt
     base_prompt_elem.innerHTML += "<br>";
   
-  base_prompt_elem.innerHTML += "<b>" + params.char_names[char_index] + "</b>: " 
-                                + base_prompt[char_index] + "<br>";
+  base_prompt_elem.innerHTML += "<b>" + params.char_names[char_index] + "</b>: " +
+                                  base_prompt[char_index] + "<br>";
 }
 
 
@@ -510,6 +601,26 @@ function random(min, max) {
   return Math.floor(Math.random() * (max - min) + min);
 }
 
+function openSettingsTab(evt, tab_name) {
+
+  var i, tabs, links;
+  
+  // Get all elements with class="tabcontent" and hide them
+  tabs = document.getElementsByClassName("settings-tab");
+  for (i = 0; i < tabs.length; i++) {
+    tabs[i].style.display = "none";
+  }
+
+  // Get all elements with class="settings-link" and remove the class "active"
+  links = document.getElementsByClassName("settings-link");
+  for (i = 0; i < links.length; i++) {
+    links[i].className = links[i].className.replace(" active", "");
+  }
+
+  // Show the current tab, and add an "active" class to the button that opened the tab
+  document.getElementById(tab_name).style.display = "block";
+  evt.currentTarget.className += " active";
+} 
 
 function onLoad() { // called when the UI is reloaded, not used yet
 
