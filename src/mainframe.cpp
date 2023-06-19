@@ -132,7 +132,7 @@ MainFrame::MainFrame(const wxString& title, const wxPoint& pos, const wxSize& si
     menuDebug->Append(MENU_Generate, "&Generate reply\tCtrl-G");
     menuDebug->Append(MENU_Pause, "&Pause Generation\tCtrl-P");
     menuDebug->Append(MENU_Stop, "&Stop Generation");
-    menuDebug->Append(MENU_Reload_UI, "&Reload UI");
+    menuDebug->Append(MENU_Reload_UI, "&Reload UI\tCtrl-R");
 
     wxMenu *menuHelp = new wxMenu;
     menuHelp->Append(wxID_ABOUT);
