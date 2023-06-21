@@ -41,6 +41,8 @@ public:
 private:
     void OnExit(wxCommandEvent& event);
     void OnClose(wxCloseEvent& event);
+    
+    void OnMouseWheel(wxMouseEvent& event);
 
     void OnSaveConversation(wxCommandEvent& event);
     void OnLoadConfig(wxCommandEvent& event);

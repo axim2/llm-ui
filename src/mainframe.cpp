@@ -104,7 +104,7 @@ MainFrame::MainFrame(const wxString& title, const wxPoint& pos, const wxSize& si
 
     this->webview = new Webview(this, this->config->ui_dir, this->config->ui_style,
                                 this->config->userscripts_dir, this->config->avatar_dir);
-    
+
     for (uint32_t i = 0; i < this->models.size(); i++) {
         this->models.at(i)->SetWebview(this->webview);
     }
@@ -152,6 +152,9 @@ MainFrame::MainFrame(const wxString& title, const wxPoint& pos, const wxSize& si
     SetSizer(vSizer);    
     Centre();
     
+    // Handle mousewheel
+    this->webview->GetBrowser()->Bind(wxEVT_MOUSEWHEEL, &MainFrame::OnMouseWheel, this);
+    
     // Add script message handler
     // Note: On Windows only the Edge backend supports AddScriptMessageHandler
     this->webview->GetBrowser()->AddScriptMessageHandler("command");
@@ -165,6 +168,7 @@ MainFrame::MainFrame(const wxString& title, const wxPoint& pos, const wxSize& si
 void MainFrame::OnExit(wxCommandEvent& event) {
     Close(true); // this will trigger OnClose handler below
 }
+
 
 void MainFrame::OnClose(wxCloseEvent& event) {
     
@@ -183,6 +187,24 @@ void MainFrame::OnClose(wxCloseEvent& event) {
 
     Destroy();
 }
+
+
+// handles zooming with Ctrl + Wheel
+void MainFrame::OnMouseWheel(wxMouseEvent& event) {
+    
+    if (!wxGetKeyState(WXK_CONTROL)) // Control isn't pressed
+        return;
+    
+    float current_zoom = this->webview->GetBrowser()->GetZoomFactor();
+    float delta = 0.1;
+    
+    if (event.GetWheelRotation() > 0) { // zoom in
+        this->webview->GetBrowser()->SetZoomFactor(current_zoom + delta);
+    } else { // zoom out
+        this->webview->GetBrowser()->SetZoomFactor(current_zoom - delta);
+    }
+}
+
 
 
 bool MainFrame::InitializeModels(void) {
