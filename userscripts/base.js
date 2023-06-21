@@ -508,7 +508,12 @@ function saveSettings() {
 // Parses prompt and populates base prompt and initial chat messages based on it
 function parsePrompt(prompt, char_index) {
   prompt_parsed = true;
-  lines = prompt.split("\n");
+  
+  // replace {{char}} and {{user}} in the prompt
+  prompt = prompt.replaceAll("{{char}}", params.char_names[char_index]);
+  prompt = prompt.replaceAll("{{user}}", params.user_name);
+  
+  let lines = prompt.split("\n");
   let prompt_final_line = -1;
   var i;
   
