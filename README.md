@@ -66,10 +66,11 @@ If the model file is not specified from the command line or throught the configu
 
 Configuration is stored by default to `configs/config.json`in JSON format. Most important settings are:
 - `model_dir` and `model_file` to point to the model file to use (UI also allows easy selection of other models under the same directory)
-- `char_name`and `user_name`
-- `prompt`, if `prompt_dir`and `prompt_file`is given, the file is used for the prompt instead
+- `char_names`and `user_name`
+- `prompt_path`
 
 In addition to LLM-UI settings, the configuration file contains GPT parameters such as context size, temperature, etc. 
+gpt_params, char_names, char_avatars etc. are arrays to support multiple characters: first element of the array refers to the first character and so on.
 
 
 ### Supported models
