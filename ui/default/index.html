@@ -11,6 +11,7 @@
   <div class="toolbar">
     <button class="toolbar-button" onclick="toggleGeneration()">Pause</button>
     <button class="toolbar-button" onclick="stopGeneration()">Stop</button>
+    <button class="toolbar-button" onclick="Regenerate()" id="regen-button" disabled="true">Regen</button>
     <button class="toolbar-button" onclick="reloadParams()">Reload Params</button>
     <button class="toolbar-button" onclick="showSettingsUI()">Settings</button>
     Model: <select name="model" id="model" class="toolbar-button" onchange="loadModel(this.value)"></select>

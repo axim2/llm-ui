@@ -53,6 +53,7 @@ private:
     void OnPause(wxCommandEvent& event);
     void OnStop(wxCommandEvent& event);
     void OnReloadUI(wxCommandEvent& event);
+    void OnDebug(wxCommandEvent& event);
 
     void WebviewOnLoaded(wxWebViewEvent& event);
 
@@ -89,6 +90,7 @@ enum {
     MENU_SAVE = 10,
     MENU_SAVE_AS = 11,
     MENU_SAVE_CONVERSATION = 12,
+    MENU_DEBUG = 13,
     MENU_Reload_UI = wxID_HIGHEST + 1
 };
 

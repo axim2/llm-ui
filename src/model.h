@@ -47,9 +47,10 @@ public:
     bool LoadModel(std::string model_path);
     
     gpt_params GetGPTParams(void); 
-    bool SetGPTParams(gpt_params new_params, bool update_seed = false);
+    bool SetGPTParams(gpt_params new_params, bool update_seed = false, int32_t *new_seed = 0);
     
     bool GenerateOutput(std::string prompt);
+    bool RegenerateOutput(void);
 
     bool ToggleGeneration(void); 
     bool StopGeneration(void);
@@ -66,6 +67,15 @@ private:
     
     gpt_params params;
     llama_context *ctx = nullptr;
+    
+    std::string old_input;
+    std::vector<uint8_t> old_state;
+    int n_past = 0;
+    int old_n_past = 0;
+    std::vector<llama_token> last_n_tokens;
+    std::vector<llama_token> old_last_n_tokens;
+    int n_outputs; // how many outputs we have generated
+    
     inline static Webview *webview; // used for communication with the HTML UI
     inline static Config *config; // pointer to config class
     
@@ -79,7 +89,6 @@ private:
 
     int n_consumed;
     int char_index; // which character this models handles? 0 - first character
-    std::vector<llama_token> last_n_tokens;
         
     inline static console_state con_st;
     std::vector<llama_token> evaluated_tokens;
