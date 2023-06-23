@@ -14,6 +14,7 @@ wxBEGIN_EVENT_TABLE(MainFrame, wxFrame)
     EVT_MENU(MENU_Pause,                MainFrame::OnPause)
     EVT_MENU(MENU_Stop,                 MainFrame::OnStop)
     EVT_MENU(MENU_Reload_UI,            MainFrame::OnReloadUI)
+    EVT_MENU(MENU_DEBUG,                MainFrame::OnDebug)
 
     EVT_BUTTON(BUTTON_Generate, MainFrame::OnGenerate)
     EVT_BUTTON(BUTTON_Pause, MainFrame::OnPause)
@@ -132,6 +133,7 @@ MainFrame::MainFrame(const wxString& title, const wxPoint& pos, const wxSize& si
     menuDebug->Append(MENU_Pause, "&Pause Generation\tCtrl-P");
     menuDebug->Append(MENU_Stop, "&Stop Generation");
     menuDebug->Append(MENU_Reload_UI, "&Reload UI\tCtrl-R");
+    menuDebug->Append(MENU_DEBUG, "&Debug");
 
     wxMenu *menuHelp = new wxMenu;
     menuHelp->Append(wxID_ABOUT);
@@ -397,6 +399,12 @@ void MainFrame::OnReloadUI(wxCommandEvent& event) {
     this->webview->GetBrowser()->Reload();
 }
 
+// used for debugging
+void MainFrame::OnDebug(wxCommandEvent& event) {
+    this->models.at(0)->RegenerateOutput();
+
+}
+
 
 // process command from UI
 void MainFrame::WebviewCommand(wxWebViewEvent& event) {
@@ -439,9 +447,13 @@ void MainFrame::WebviewCommand(wxWebViewEvent& event) {
             params_s = utils::CleanJSString(params_s);
 
             //LOG_S(INFO) << "Received new params from UI: " << params_s;
+            int32_t new_seed;
             this->config->ParseJSON(params_s);
             for (i = 0; i < this->models.size(); i++) {
-                this->models.at(i)->SetGPTParams(this->config->gpt_parameters.at(i), true);
+                new_seed = this->config->gpt_parameters.at(i).seed;
+                this->models.at(i)->SetGPTParams(this->config->gpt_parameters.at(i), true, &new_seed);
+                if (new_seed != this->config->gpt_parameters.at(i).seed) // seed has changed, update it
+                    this->config->gpt_parameters.at(i).seed = new_seed;
             }
         }
         
@@ -456,6 +468,11 @@ void MainFrame::WebviewCommand(wxWebViewEvent& event) {
                 this->config->model_file = old_model; // revert
             }
         }
+        
+    } else if (j["cmd"] =="regenerate") {
+        int n = j["params"]["char_index"].get<int>();
+        LOG_S(INFO) << "Calling renegerate on character: " << n;
+        this->models.at(n)->RegenerateOutput();
         
     } else {
         LOG_S(WARNING) << "Unknown command received from UI: " << j["cmd"];

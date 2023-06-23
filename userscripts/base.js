@@ -112,6 +112,10 @@ function waitingForInput() {
     return;
   }
   
+  // enable regen button just in case
+  var regen_button = document.getElementById('regen-button');
+  regen_button.disabled = false;
+  
   updateStatusbar('Reverse prompt found, waiting for input, next char: ' +
     params.char_names[current_char]);
 }
@@ -124,7 +128,7 @@ function generationStopped(time) {
   // add last message to the log
   if (tmplog.length > 0) {
     log.push(tmplog);
-    tmplog="";
+    tmplog = "";
   }
 
   statusbar.textContent = "Finished generating...";
@@ -179,6 +183,35 @@ function stopGeneration() {
       first_run[i] = true;
     prompt_parsed = false;
 }
+
+
+// regenerates character's last reply
+function Regenerate() {
+
+  previous_char = current_char - 1;
+  if (previous_char < 0)
+    previous_char = params.n_chars - 1;
+  
+  if (first_run[previous_char])
+    return;
+
+  // remove previous messagebox and entry from the log
+  let last_messagebox = Array.from(document.querySelectorAll('.left-msg')).pop();
+  chat_elem.removeChild(last_messagebox);
+  log.pop()
+  
+  current_char = previous_char;
+
+  model_list.disabled = true;
+  appendCharMessage("", current_char);
+  
+  let command = {};
+  command.cmd = "regenerate";
+  command.params = {};
+  command.params.char_index = current_char;
+  window.command.postMessage(command);
+}
+
 
 function reloadParams() {
     let command = {};
@@ -400,7 +433,7 @@ function processUserInput(input_text) {
       command.params.prompt = base_prompt[current_char] + "\n" + base_log[current_char].join("\n") + "\n";      
     }
     first_run[current_char] = false;
-    
+
   } else {
     command.cmd = "continue generation";
     command.params = {};

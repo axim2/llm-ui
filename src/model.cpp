@@ -76,19 +76,24 @@ gpt_params Model::GetGPTParams(void) {
 
 
 // used by UI to set new parameters
-bool Model::SetGPTParams(gpt_params new_params, bool update_seed) {
+// if update_seed is true and random seed is generated, store it to new_seed
+bool Model::SetGPTParams(gpt_params new_params, bool update_seed, int32_t *new_seed) {
     
     // check if seed has been updated, if yes update ctx->rng
     if (update_seed) {
         int tmp_seed;
         if (new_params.seed != params.seed) {
             if (new_params.seed < 0) { // generate random seed and store it
-                tmp_seed = time(NULL);
+                int32_t r = std::random_device()();
+                int32_t tmp_seed = abs(r); // llama.cpp doesn't support uint32_t as a seed
+
+                *new_seed = tmp_seed;
                 new_params.seed = tmp_seed;
             } else {
                 tmp_seed = new_params.seed;
             }
-            this->ctx->rng = std::mt19937(tmp_seed);
+            //this->ctx->rng = std::mt19937(tmp_seed);
+            this->ctx->rng.seed(tmp_seed);
         }
     }
     this->params = new_params;
@@ -108,9 +113,10 @@ bool Model::GenerateOutput(std::string prompt) {
     this->pause.clear();
         
     this->busy = true;
+    
+    this->n_outputs = 0;
 
     int i;
-
     // if n_chars > 1, add names of other chars to antiprompt
     if (this->config->n_chars > 1) {
         for (i = 0; i < this->config->n_chars; i++) {
@@ -132,7 +138,7 @@ bool Model::GenerateOutput(std::string prompt) {
     std::vector<llama_token> session_tokens;
     
     // tokenize the prompt
-    params.prompt = prompt;
+    this->params.prompt = prompt;
     // Add a space in front of the first character to match OG llama tokenizer behavior
     this->params.prompt.insert(0, 1, ' ');
     this->webview->GetBrowser()->RunScript("tokenizing();");
@@ -205,13 +211,21 @@ bool Model::GenerateOutput(std::string prompt) {
     PrintGPTParams();
     
     // TODO: replace with ring-buffer
-    std::vector<llama_token> last_n_tokens(n_ctx);
+    this->last_n_tokens.clear();
+    this->last_n_tokens.resize(n_ctx);
     std::fill(last_n_tokens.begin(), last_n_tokens.end(), 0);
+    
+    // store initial state
+    n_past = 0;
+    this->old_state.resize(llama_get_state_size(ctx));
+    llama_copy_state_data(this->ctx, this->old_state.data());
+    this->old_n_past = n_past;
+    this->old_last_n_tokens = last_n_tokens;
+    this->old_input = prompt;
 
     bool is_antiprompt = false;
     bool input_noecho  = false;
     
-    int n_past = 0;
     int n_remain = params.n_predict;
     int n_consumed = 0;
     int n_session_consumed = 0;
@@ -481,21 +495,29 @@ bool Model::GenerateOutput(std::string prompt) {
                 
                 // instead of reading from stdin we are waiting for new input from UI
                 this->pause.test_and_set();
+                this->n_outputs++;
                 
-                //this->webview->GetBrowser()->RunScript("updateStatusbar('Reverse prompt found, waiting for input');");
                 this->webview->GetBrowser()->RunScript("waitingForInput()");
                 while (this->pause.test()) { // sleep for a while if paused
                     std::this_thread::sleep_for(std::chrono::milliseconds(100));
                     if (this->new_input.size() > 0)  { // new input received
                         this->new_input_mutex.lock();
                         buffer += this->new_input;
+                                                
+                        // store current state
+                        this->old_state.resize(llama_get_state_size(ctx));
+                        llama_copy_state_data(this->ctx, this->old_state.data());
+                        this->old_n_past = n_past;
+                        this->old_last_n_tokens = last_n_tokens;
+                        this->old_input = this->new_input;
+                        
                         this->new_input.clear();
                         this->new_input_mutex.unlock();
                         this->pause.clear(); // continue
                         this->webview->GetBrowser()->RunScript("generating();");
                     }
                 }
-
+    
                 // Add tokens to embd only if the input buffer is non-empty
                 // Entering a empty line lets the user pass control back
                 if (buffer.length() > 1) {
@@ -508,7 +530,7 @@ bool Model::GenerateOutput(std::string prompt) {
 
                     auto line_inp = ::llama_tokenize(ctx, buffer, false);
                     embd_inp.insert(embd_inp.end(), line_inp.begin(), line_inp.end());
-
+                        
                     // instruct mode: insert response suffix
                     if (params.instruct) {
                         embd_inp.insert(embd_inp.end(), inp_sfx.begin(), inp_sfx.end());
@@ -585,6 +607,41 @@ bool Model::AddUserInput(std::string input) {
     this->new_input_mutex.lock();
     this->new_input = input;
     this->new_input_mutex.unlock();
+    return true;
+}
+
+
+// regenerates reply
+bool Model::RegenerateOutput() {
+    if (!this->busy) {
+        LOG_S(WARNING) << "Regenerate called but we aren't generating";
+        return false;
+    }
+    
+    int32_t r = std::random_device()();
+    int32_t tmp_seed = abs(r); // llama.cpp doesn't support uint32_t as a seed
+    LOG_S(INFO) << "Using seed: " << tmp_seed << " for regen";
+        
+    if (this->n_outputs == 1) { // generate everything from scratch
+        this->StopGeneration();
+        while (this->GetBusy())
+            sleep(0.1);
+
+        this->ctx->rng = std::mt19937(tmp_seed); // create new rng
+        
+        std::thread thread(&Model::GenerateOutput, this, this->old_input);
+        thread.detach();
+        
+    } else { // we already have generated second output
+        // restore old state, it contains RNG state therefore it must be restored first
+        llama_set_state_data(this->ctx, this->old_state.data());
+        
+        this->ctx->rng.seed(tmp_seed);
+        this->n_past = this->old_n_past;
+        this->last_n_tokens = this->old_last_n_tokens;
+        this->AddUserInput(this->old_input);
+    }
+
     return true;
 }
 
