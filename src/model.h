@@ -58,6 +58,7 @@ public:
     bool AddUserInput(std::string input);
     
     bool GetBusy(void);
+    bool GetPause(void);
     
     void SetWebview(Webview *new_webview);
     

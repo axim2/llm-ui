@@ -650,6 +650,10 @@ bool Model::GetBusy(void) {
     return this->busy;
 }
 
+bool Model::GetPause(void) {
+    return this->pause.test();
+}
+
 
 void Model::SetWebview(Webview *new_webview) {
     this->webview = new_webview;

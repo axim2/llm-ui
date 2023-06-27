@@ -271,11 +271,13 @@ void MainFrame::CreateModelList(void) {
 
 void MainFrame::OnSaveConversation(wxCommandEvent& event) {
 
-    // FIXME: check for paused status, if model is paused but busy we can save logs
     for (uint32_t i = 0; i < this->models.size(); i++) {
-        if (this->models.at(i)->GetBusy()) { // can't save if we are busy generating
-            LOG_S(WARNING) << "Can't save conversation while generating output";
-            return;
+        if (this->models.at(i)->GetBusy()) { 
+            // can't save if we are busy generating and we aren't paused
+            if (!this->models.at(i)->GetPause()) {
+                LOG_S(WARNING) << "Can't save conversation while generating output";
+                return;
+            }
         }
     }
 
