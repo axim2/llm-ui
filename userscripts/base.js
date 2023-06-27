@@ -92,7 +92,7 @@ function waitingForInput() {
     if (!tmplog.startsWith(params.char_names[current_char] + ":"))
       tmplog = params.char_names[current_char] + ":" + tmplog;
       
-    log.push(tmplog);
+    log.push([Date.now(), tmplog]);
     tmplog="";
   }
   
@@ -127,7 +127,7 @@ function generationStopped(time) {
   model_list.disabled = false;
   // add last message to the log
   if (tmplog.length > 0) {
-    log.push(tmplog);
+    log.push([Date.now(), tmplog]);
     tmplog = "";
   }
 
@@ -424,8 +424,7 @@ function processUserInput(input_text) {
     command.cmd = "start generation";
     command.params = {};
     command.params.char_index = current_char; // which character is generating the reply
-        //command.params.prompt = base_prompt + "\n" + log.join("\n") + "\n" +
-          //params.user_name + ":" + input_text + "\n";
+    
     if (input_text != null) {
       command.params.prompt = base_prompt[current_char] + "\n" + base_log[current_char].join("\n") + "\n" +
         params.user_name + ":" + input_text + "\n";
@@ -438,19 +437,23 @@ function processUserInput(input_text) {
     command.cmd = "continue generation";
     command.params = {};
     command.params.char_index = current_char;
+    
+    // since log contains timestamps, we want to get the second element of each log entry
     if (input_text != null) {
-      command.params.input = log.slice(last_log_index[current_char]).join("\n") + 
+      command.params.input = log.slice(last_log_index[current_char]).map(function(e){return e[1];}).join("\n") + 
                               params.user_name + ":" + input_text + "\n" + 
                               params.char_names[current_char] + ":";
     } else {
-      command.params.input = log.slice(last_log_index[current_char]).join("\n") + 
+      command.params.input = log.slice(last_log_index[current_char]).map(function(e){return e[1];}).join("\n") + 
                               params.char_names[current_char] + ":";      
     }
   }
     
   window.command.postMessage(command);
-  if (input_text != null)
-    log.push(params.user_name + ": " + input_text);
+  if (input_text != null) {
+    // also store timestamp in the log
+    log.push([Date.now(), params.user_name + ": " + input_text]);
+  }
   tmplog = "";
 }
 
@@ -621,6 +624,7 @@ function LLMOutput(token) {
 function retrieveLog() {
   tmp = {};
   tmp["base_prompt"] = base_prompt;
+  tmp["base_log"] = base_log;
   tmp["log"] = log;
   return tmp;
 }
