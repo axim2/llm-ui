@@ -10,6 +10,8 @@ const base_prompt_elem = document.querySelector('.base-prompt');
 var settingsPopup = document.getElementById('settings-popup');
 var settings_body = document.getElementById('settings-body');
 
+var next_char_list = document.getElementById('next-char-list');
+
 // <span> element that closes the modal
 const span = document.getElementsByClassName("close")[0];
 
@@ -32,6 +34,9 @@ var is_generating = false; // wherever we are currently generating
 var is_paused = false; // do we need this?
 
 var current_char = 0; // which char should reply next?
+var previous_char = 0;
+var users_turn = true; // is the user's turn next?
+var next_char_policy = "rr"; // round robin
 
 // common descriptions, not used yet
 var char_description; // description of AI character
@@ -60,8 +65,9 @@ input_elem.addEventListener("submit", event => {
   is_generating = true;
   generating();
 
-  // disable model selection, since changing model while generating may cause problems
-  model_list.disabled = true; 
+  // disable model and next char selection, since changing them while generating may cause problems
+  model_list.disabled = true;
+  next_char_list.disabled = true;
 
   // used for prompt generation
   processUserInput(input_text);
@@ -85,8 +91,13 @@ function generationPaused() {
 
 // used by LLM to indicate that it's waiting for input in interactive mode
 function waitingForInput() {
+
+  previous_char = current_char; // store current char, needed for regens
+
   is_generating = false;
   model_list.disabled = false;
+  next_char_list.disabled = false;
+  
   if (tmplog.length > 0) {
     // check that tmplog correctly starts with the current char name
     if (!tmplog.startsWith(params.char_names[current_char] + ":"))
@@ -98,15 +109,17 @@ function waitingForInput() {
   
   // store index of the last reply of this char
   last_log_index[current_char] = log.length;
+
+
+  updateStatusbar('Reverse prompt found, waiting for input.');
+
+  if (params.n_chars > 0)
+    updateNextChar();
   
-  // update current_char
-  current_char++;
-  if (current_char == params.n_chars)
-    current_char = 0;
-  
-  if ((current_char != 0) && (!first_run[current_char])) {
+  if (!users_turn) {
     // call next char directly without waiting for user input
     model_list.disabled = true;
+    next_char_list.disabled = true;
     appendCharMessage("", current_char);
     processUserInput(null);
     return;
@@ -115,9 +128,6 @@ function waitingForInput() {
   // enable regen button just in case
   var regen_button = document.getElementById('regen-button');
   regen_button.disabled = false;
-  
-  updateStatusbar('Reverse prompt found, waiting for input, next char: ' +
-    params.char_names[current_char]);
 }
 
 
@@ -125,6 +135,8 @@ function waitingForInput() {
 function generationStopped(time) {
   is_generating = false;
   model_list.disabled = false;
+  next_char_list.disable = false;
+  
   // add last message to the log
   if (tmplog.length > 0) {
     log.push([Date.now(), tmplog]);
@@ -188,21 +200,18 @@ function stopGeneration() {
 // regenerates character's last reply
 function Regenerate() {
 
-  previous_char = current_char - 1;
-  if (previous_char < 0)
-    previous_char = params.n_chars - 1;
-  
   if (first_run[previous_char])
     return;
 
   // remove previous messagebox and entry from the log
   let last_messagebox = Array.from(document.querySelectorAll('.left-msg')).pop();
   chat_elem.removeChild(last_messagebox);
-  log.pop()
+  log.pop();
   
   current_char = previous_char;
 
   model_list.disabled = true;
+  next_char_list.disabled = true;
   appendCharMessage("", current_char);
   
   let command = {};
@@ -223,6 +232,7 @@ function reloadParams() {
 }
 
 
+// this is also called in the beginning, therefore initialize all kinds of stuff here
 function parseParams(new_params, show_ui = false) {
   if (new_params != null) {
     params = JSON.parse(new_params);
@@ -265,8 +275,18 @@ function parseParams(new_params, show_ui = false) {
   if (show_ui)
     showSettingsUI();
   
-  if (params.n_chars > 1)
+  if (params.n_chars > 1) {
     updateStatusbar("Next char: " + params.char_names[current_char]);
+    
+    // show the list for selecting the next character
+    elem = document.getElementById('next-char-list');
+    elem.hidden = false;
+    
+    for (i = 0; i < params.n_chars; i++) {
+      html = "<option value='" + i + "'>" + params.char_names[i] + " (" + i + ")</option>";
+      elem.insertAdjacentHTML("beforeend", html);
+    }
+  }
 }
 
 
@@ -415,6 +435,44 @@ function loadModel(new_model) {
 }
 
 
+// Updates the next character that should answer based on our policy
+function updateNextChar() {
+  
+  users_turn = true; // default
+  if (next_char_policy == "rr") { // round robin
+    current_char = previous_char + 1;
+    if (current_char == params.n_chars)
+      current_char = 0; // implies user's turn
+    else
+      users_turn = false;
+
+  } else if (next_char_policy == "rnd") { // random
+    current_char = Math.floor(Math.random() * (params.n_chars + 1));
+    if (current_char == params.n_chars)
+      current_char = 0; // implies user's turn
+    else
+      users_turn = false;
+
+  } else { // next char has been selected by the user
+    current_char = parseInt(next_char_policy);
+  }
+
+  // user should get his turn if the char that hasn't replied yet
+  if (first_run[current_char]) 
+    users_turn = true;
+ 
+  updateStatusbar('Next char: ' + params.char_names[current_char]);
+}
+
+
+function updateNextCharPolicy(policy) {
+  if (next_char_policy != policy) {
+    next_char_policy = policy;
+    updateNextChar();
+  }
+}
+
+
 // called by UI
 // if input_text == null, don't include "user:" + input to the LLM parameters
 function processUserInput(input_text) {
@@ -456,7 +514,6 @@ function processUserInput(input_text) {
   }
   tmplog = "";
 }
-
 
 
 function saveSettings() {
@@ -611,7 +668,7 @@ function LLMOutput(token) {
     }
   }
   
-  updateStatusbar(params.char_names[current_char]+" is typing...");
+  updateStatusbar(params.char_names[current_char] + " is typing...");
   // check the same for AI name
   if (text_field.innerHTML.endsWith(params.char_names[current_char] + ":"))
     text_field.innerHTML = text_field.innerHTML.slice(0, -(params.char_names[current_char].length + 1));

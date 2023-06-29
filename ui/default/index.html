@@ -15,6 +15,11 @@
     <button class="toolbar-button" onclick="reloadParams()">Reload Params</button>
     <button class="toolbar-button" onclick="showSettingsUI()">Settings</button>
     Model: <select name="model" id="model" class="toolbar-button" onchange="loadModel(this.value)"></select>
+    <select id="next-char-list" class="toolbar-button" onchange="updateNextCharPolicy(this.value)" hidden>
+      <option selected disabled>Next character:</option>
+      <option value="rr">Round robin</option>
+      <option value="rnd">Random</option>
+    </select>
   </div>
   <header class="header">
     <!--<div class="base-prompt"><h3>Base prompt(s)...</h3></div>-->

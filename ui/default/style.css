@@ -169,7 +169,7 @@ body {
 }
 
 .toolbar-button:disabled {
-  color: #77b;
+  color: #777;
 }
   
 .base-prompt {
