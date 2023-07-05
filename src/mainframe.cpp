@@ -449,7 +449,7 @@ void MainFrame::WebviewCommand(wxWebViewEvent& event) {
             params_s = utils::CleanJSString(params_s);
 
             //LOG_S(INFO) << "Received new params from UI: " << params_s;
-            int32_t new_seed;
+            uint32_t new_seed;
             this->config->ParseJSON(params_s);
             for (i = 0; i < this->models.size(); i++) {
                 new_seed = this->config->gpt_parameters.at(i).seed;

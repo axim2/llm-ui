@@ -13,7 +13,7 @@ Model::Model(Webview *webview, Config *config, int char_index) {
     this->stop.clear();
     this->pause.clear();
     
-    llama_init_backend();
+    llama_init_backend(false);
 }
 
 
@@ -77,15 +77,15 @@ gpt_params Model::GetGPTParams(void) {
 
 // used by UI to set new parameters
 // if update_seed is true and random seed is generated, store it to new_seed
-bool Model::SetGPTParams(gpt_params new_params, bool update_seed, int32_t *new_seed) {
+bool Model::SetGPTParams(gpt_params new_params, bool update_seed, uint32_t *new_seed) {
     
     // check if seed has been updated, if yes update ctx->rng
     if (update_seed) {
         int tmp_seed;
         if (new_params.seed != params.seed) {
-            if (new_params.seed < 0) { // generate random seed and store it
-                int32_t r = std::random_device()();
-                int32_t tmp_seed = abs(r); // llama.cpp doesn't support uint32_t as a seed
+            if (new_params.seed == LLAMA_DEFAULT_SEED) { // generate random seed and store it
+                int32_t tmp_seed = std::random_device()();
+                LOG_S(INFO) << "Generating random seed: " << tmp_seed;
 
                 *new_seed = tmp_seed;
                 new_params.seed = tmp_seed;
@@ -618,8 +618,7 @@ bool Model::RegenerateOutput() {
         return false;
     }
     
-    int32_t r = std::random_device()();
-    int32_t tmp_seed = abs(r); // llama.cpp doesn't support uint32_t as a seed
+    uint32_t tmp_seed = std::random_device()();
     LOG_S(INFO) << "Using seed: " << tmp_seed << " for regen";
         
     if (this->n_outputs == 1) { // generate everything from scratch
@@ -667,7 +666,7 @@ void Model::PrintGPTParams(void) {
 
     fprintf(stderr, "sampling: repeat_last_n = %d, repeat_penalty = %f, presence_penalty = %f, frequency_penalty = %f, top_k = %d, tfs_z = %f, top_p = %f, typical_p = %f, temp = %f, mirostat = %d, mirostat_lr = %f, mirostat_ent = %f\n", this->params.repeat_last_n, this->params.repeat_penalty, this->params.presence_penalty, this->params.frequency_penalty, this->params.top_k, this->params.tfs_z, this->params.top_p, this->params.typical_p, this->params.temp, this->params.mirostat, this->params.mirostat_eta, this->params.mirostat_tau);
     fprintf(stderr, "generate: n_ctx = %d, n_batch = %d, n_predict = %d, n_keep = %d\n", n_ctx, this->params.n_batch, this->params.n_predict, this->params.n_keep);
-    fprintf(stderr, "seed: %d\n", this->params.seed);
+    fprintf(stderr, "seed: %u\n", this->params.seed);
     fprintf(stderr, "\n\n");    
 }
 

@@ -47,7 +47,7 @@ public:
     bool LoadModel(std::string model_path);
     
     gpt_params GetGPTParams(void); 
-    bool SetGPTParams(gpt_params new_params, bool update_seed = false, int32_t *new_seed = 0);
+    bool SetGPTParams(gpt_params new_params, bool update_seed = false, uint32_t *new_seed = 0);
     
     bool GenerateOutput(std::string prompt);
     bool RegenerateOutput(void);
