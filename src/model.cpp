@@ -115,24 +115,7 @@ bool Model::GenerateOutput(std::string prompt) {
     this->busy = true;
     
     this->n_outputs = 0;
-
-    int i;
-    // if n_chars > 1, add names of other chars to antiprompt
-    if (this->config->n_chars > 1) {
-        for (i = 0; i < this->config->n_chars; i++) {
-            if (i != this->char_index) { // ignore us
-                if (!std::count(this->params.antiprompt.begin(), 
-                    this->params.antiprompt.end(),
-                    this->config->char_names.at(i))) {
-                    // add it to the antiprompt
-                    this->params.antiprompt.push_back(this->config->char_names.at(i) + ":");
-                    LOG_S(INFO) << "Adding: '" << this->config->char_names.at(i) << "' to antiprompt.";
-                }
-            }
-        }
-    }
-
-    
+  
     //std::string path_session = this->params.path_session;
     std::string path_session = this->params.path_prompt_cache;
     std::vector<llama_token> session_tokens;
@@ -195,6 +178,7 @@ bool Model::GenerateOutput(std::string prompt) {
     fprintf(stderr, "%s: char: %d, prompt: '%s'\n", __func__, this->char_index, 
             this->params.prompt.c_str());
     fprintf(stderr, "%s: number of tokens in prompt = %zu\n", __func__, embd_inp.size());
+    int i;
     for (i = 0; i < (int) embd_inp.size(); i++) {
         fprintf(stderr, "%6d -> '%s'\n", embd_inp[i], llama_token_to_str(this->ctx, embd_inp[i]));
     }

@@ -225,7 +225,7 @@ bool MainFrame::InitializeModels(void) {
     }
     
     // create new models
-    for (i = 0; (int)i < this->config->n_chars; i++) {
+    for (i = 0; i < this->config->n_chars; i++) {
         if (this->models.size() <= i) { // create new vector element
             this->models.push_back(new Model(this->webview, this->config, i));
         } else { // use existing element
@@ -496,7 +496,7 @@ void MainFrame::WebviewOnLoaded(wxWebViewEvent& event) {
 void MainFrame::SetUIParameters(void) {
     json params_j = *this->config;
     
-    for (int i = 0; i < this->config->n_chars; i++)
+    for (uint32_t i = 0; i < this->config->n_chars; i++)
         params_j["gpt_params"][i]["prompt"] = utils::CleanStringForJS(params_j["gpt_params"][i]["prompt"]);
     std::string params_s = params_j.dump();
     this->webview->GetBrowser()->RunScript("parseParams('" + params_s + "');");

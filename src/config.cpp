@@ -23,7 +23,7 @@ bool Config::ParseFile(std::string filename) {
         if (!ret)
             return false;
         
-        for (int i = 0; i < this->n_chars; i++) {
+        for (uint32_t i = 0; i < this->n_chars; i++) {
             // set up reasonable defaults
             if (this->gpt_parameters.at(i).antiprompt.size() == 0)
                 this->gpt_parameters.at(i).antiprompt.push_back(this->user_name + ":");
@@ -65,11 +65,27 @@ bool Config::ParseJSON(std::string input) {
     
     this->gpt_json = j.value("gpt_params", json::object());
     this->gpt_parameters.clear(); // clear existing parameters
-    uint32_t i;
-    for (i = 0; i < this->gpt_json.size(); i++)
+    uint32_t i, k;
+    for (i = 0; i < this->gpt_json.size(); i++) {
+        // add names of other chars to antiprompts if they aren't there yet
+        if (this->n_chars > 1) {
+            for (k = 0; k < this->n_chars; k++) { 
+                if (k != i) { // ignore current char name
+                    if (!std::count(this->gpt_json[i]["antiprompt"].begin(), 
+                        this->gpt_json[i]["antiprompt"].end(),
+                        this->char_names.at(k))) {
+                        // add it to the antiprompt
+                        this->gpt_json[i]["antiprompt"].push_back(this->char_names.at(k) + ":");
+                        LOG_S(INFO) << "Adding: '" << this->char_names.at(k) << 
+                            "' to antiprompt for " << this->char_names.at(i) << ".";
+                    }
+                }
+            }
+        }
         this->gpt_parameters.push_back(this->gpt_json[i]);
-
-    while ((int) this->gpt_parameters.size() < this->n_chars) {
+    }
+        
+    while (this->gpt_parameters.size() < this->n_chars) {
         // fill the rest gpt_parameters if they aren't given in the config file
         this->gpt_parameters.push_back(this->gpt_json[i-1]); // i increased at the end of the loop
     }

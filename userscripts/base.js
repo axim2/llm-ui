@@ -645,10 +645,10 @@ function parsePrompt(prompt, char_index) {
 
 // called by LLM
 function LLMOutput(token) {
-  // update chat log etc.
+  // update chat log
   tmplog = tmplog + token;
     
-  // find last messagebox of AI and modify it's text field.... 
+  // find last messagebox of AI and modify it's text field
   let last_messagebox = Array.from(document.querySelectorAll('.left-msg')).pop();
   let text_field = last_messagebox.querySelector('.msg-text');
     
@@ -658,12 +658,14 @@ function LLMOutput(token) {
   text_field.innerHTML = text_field.innerHTML + token;
     
   // check if last part of innerHTML matches with antiprompt + ":" and remove it
-  // FIXME: multiple gpt_params
-  for (let i = 0; i < params.gpt_params[0].antiprompt.length; i++) {
-    if (text_field.innerHTML.endsWith(params.gpt_params[0].antiprompt.at(i))) {
-      text_field.innerHTML = text_field.innerHTML.slice(0, -params.gpt_params[0].antiprompt.at(i).length);
+  let antiprompt;
+  for (let i = 0; i < params.gpt_params[current_char].antiprompt.length; i++) {
+    antiprompt = params.gpt_params[current_char].antiprompt.at(i);
+
+    if (text_field.innerHTML.endsWith(antiprompt)) {
+      text_field.innerHTML = text_field.innerHTML.slice(0, -antiprompt.length);
       // also remove it from tmplog
-      tmplog = tmplog.slice(0, -params.gpt_params[0].antiprompt.at(i).length);
+      tmplog = tmplog.slice(0, -antiprompt.length);
       break;
     }
   }

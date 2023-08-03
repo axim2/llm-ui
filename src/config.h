@@ -44,7 +44,7 @@ public:
     std::string ui_style    = DEFAULT_UI_STYLE;
     std::string userscripts_dir;
     bool        auto_n_keep = false;
-    int         n_chars     = 1;
+    uint32_t    n_chars     = 1;
     json gpt_json; // GPT params as JSON object before parsing
     std::vector<gpt_params> gpt_parameters;
 };
